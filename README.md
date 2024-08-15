@@ -13,6 +13,8 @@ Ever found yourself battling with equations while writing papers in LaTeX, wishi
 
 [//]: # (![Quack2Tex in action]&#40;https://raw.githubusercontent.com/haruiz/Quack2TeX/main/images/quack2tex.gif&#41;)
 
+See the video below for a demo of Quack2Tex in action:
+
 [![Watch the video](https://img.youtube.com/vi/kkyJtEnfUgo/maxresdefault.jpg)](https://youtu.be/kkyJtEnfUgo)
 
 ## 🧠 Powered By
