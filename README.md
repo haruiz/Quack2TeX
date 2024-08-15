@@ -45,6 +45,15 @@ make you set the env variables `GOOGLE_API_KEY` and/or `OPENAI_API_KEY` for usin
 You can also use LLava models through the ollama api.
 You can also run the app from python, see the `main.py` file for an example.
 
+## 📝 Roadmap
+
+- [x] Support gemini, gpt-4o, and lava models
+- [ ] Add support for huggingface models
+- [ ] Allow user add custom actions to the rubber-duck menu
+- [ ] Persist images and results in a database
+- [ ] Enable user to access to previous results
+- [ ] Create window, mac, and linux executables
+
 ## 🤝 Contributing
 
 Want to help make Quack2Tex better? Feel free to contribute by following these steps:
