@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css"
+    />
+
+    <meta charset="UTF-8">
+    <title>Mardown Viewer</title>
+</head>
+<body>
+<div id="placeholder"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"></script>
+
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/latex.min.js"></script>
+<script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+
+<script>
+    'use strict';
+
+    const placeholder = document.getElementById('placeholder');
+    const updateContent = function (text) {
+
+        placeholder.innerHTML = marked.parse(text);
+
+        let codeBlocks = document.querySelectorAll('code.language-latex');
+        codeBlocks.forEach((block) => {
+
+            let blockContent = block.textContent;
+            const latexCode = blockContent.replace(/`/g, '').trim();
+            let html = '';
+            try {
+                html = katex.renderToString(latexCode);
+
+                const latexBlockEl = document.createElement('div');
+                const latexCodeRenderElement = document.createElement('div');
+                const latexCodeElement = document.createElement('code');
+                latexBlockEl.appendChild(latexCodeElement);
+                latexBlockEl.appendChild(latexCodeRenderElement);
+                latexCodeElement.innerHTML = block.innerHTML;
+                latexCodeRenderElement.innerHTML = html;
+                block.parentNode.replaceChild(latexBlockEl, block);
+
+            } catch (e) {
+                if (e instanceof katex.ParseError) {
+                    // KaTeX can't parse the expression
+                    html = ("Error rendering the following LaTex code: '" + latexCode + "': " + e.message)
+                        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                } else {
+                    throw e;  // other error
+                }
+            }
+            doc.log(html);
+        });
+
+
+
+        hljs.highlightAll();
+        renderMathInElement(placeholder, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false},
+            ]
+        });
+
+        const snippets = document.querySelectorAll('code[data-highlighted="yes"]');
+        const numberOfSnippets = snippets.length;
+        for (let i = 0; i < numberOfSnippets; i++) {
+            let codeBlock = snippets[i];
+            let code = codeBlock.innerText;
+            let codeBlockContainer = document.createElement('div');
+            codeBlockContainer.appendChild(codeBlock.cloneNode(true));
+            codeBlockContainer.classList.add('code-block-container');
+            codeBlock.parentNode.replaceChild(codeBlockContainer, codeBlock);
+
+            let button = document.createElement('button');
+            button.innerText = 'Copy';
+            button.classList.add('hljs-copy');
+            codeBlockContainer.appendChild(button);
+
+            button.addEventListener("click", function () {
+                this.innerText = 'Copying..';
+                doc.send_to_clipboard(code);
+                this.innerText = 'Copied!';
+                let button = this;
+                setTimeout(function () {
+                    button.innerText = 'Copy';
+                }, 1000)
+            });
+        }
+
+        doc.log(placeholder.innerHTML);
+    }
+
+    let doc = null;
+    new QWebChannel(qt.webChannelTransport, (channel) => {
+        doc = channel.objects.qtViewerDoc;
+        updateContent(doc.content);
+        doc.contentChanged.connect(updateContent);
+    });
+</script>
+
+<style>
+    .hljs-copy {
+        margin-top: 0.5em;
+        background-color: #f8f8f8;
+        padding: 0.3em 0.5em;
+        border-radius: 0.3em;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        display: block;
+    }
+
+    .code-block-container {
+        margin-bottom: 1em;
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        box-sizing: border-box;
+    }
+
+    .code-block-container code {
+        display: block;
+        white-space: pre-wrap; /* This allows the code to wrap inside the container */
+        word-wrap: break-word; /* Break long words for better readability */
+    }
+</style>
+</body>
+</html>

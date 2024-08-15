@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="/">
+    <file>icons/tex.png</file>
+    <file>icons/gears.png</file>
+    <file>icons/python.png</file>
+    <file>icons/map.png</file>
+    <file>icons/programmer.png</file>
+    <file>icons/cooking.png</file>
+    <file>icons/translate.png</file>
+    <file>icons/history.png</file>
+    <file>icons/painter.png</file>
+    <file>icons/rubber-duck.png</file>
+    <file>icons/teach.png</file>
+    <file>icons/close.png</file>
+    <file>icons/loading.gif</file>
+  </qresource>
+</RCC>
