@@ -27,7 +27,7 @@ class LLM:
         for client_name, client_class in LLM._clients.items():
             try:
                 return client_class.get_model(model, **kwargs)
-            except ValueError:
+            except:
                 pass
         # If the model is not found in any of the clients, raise an error
         raise ValueError(f"Model '{model}' is not available in any registered client.")

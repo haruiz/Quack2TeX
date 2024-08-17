@@ -16,7 +16,7 @@ menu_items = [
         "tooltip": "How to cook?",
         "data": {
             "system_instruction": "Provide the response in markdown format.",
-            "guidance_prompt": "Analyze the image to identify the recipe. Detail the cooking steps, listing all "
+            "guidance_prompt": "Try to identify the recipe in the image. Detail the cooking steps, listing all "
             "necessary ingredients with precise measurements, and explain the process.",
         },
     },
@@ -40,16 +40,16 @@ menu_items = [
             "functionality, and explain its purpose or the problem it solves.",
         },
     },
-    # {
-    #     "icon": ":icons/translate.png",
-    #     "value": "translate",
-    #     "tooltip": "Translate the text",
-    #     "data": {
-    #         "system_instruction": "Provide the response in markdown format.",
-    #         "guidance_prompt": "Translate the text in the image into Spanish. Ensure the translation is accurate and "
-    #                            "maintains the original meaning."
-    #     }
-    # },
+    {
+        "icon": ":icons/translate.png",
+        "value": "translate",
+        "tooltip": "Translate the text",
+        "data": {
+            "system_instruction": "Provide the response in markdown format.",
+            "guidance_prompt": "Translate the text in the image into Spanish. Ensure the translation is accurate and "
+                               "maintains the original meaning."
+        }
+    },
     {
         "icon": ":icons/map.png",
         "value": "map",
