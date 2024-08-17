@@ -11,6 +11,20 @@ class LLM:
     _clients = {"openai": OpenAIClient, "google": GoogleClient, "ollama": OllamaClient}
 
     @staticmethod
+    def available_models():
+        """
+        Get a list of available models.
+        :return:
+        """
+        models = []
+        for client_name, client_class in LLM._clients.items():
+            try:
+                models.extend(client_class.list_models())
+            except:
+                pass
+        return models
+
+    @staticmethod
     def create(model: str, **kwargs):
         """
         Create a model instance.
@@ -20,8 +34,6 @@ class LLM:
         :return: The created model instance.
         :raises ValueError: If the model is not found in any client.
         """
-
-        # Cache available models for each client
 
         # Find the correct client based on the model name
         for client_name, client_class in LLM._clients.items():

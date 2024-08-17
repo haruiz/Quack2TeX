@@ -15,8 +15,16 @@ class OpenAIClient(LLMClient):
 
     def __init__(self, model_name: str, **kwargs) -> None:
         super().__init__(model_name)
+        self._set_api_key()
         self.api_client = openai.OpenAI()
         self.system_instruction = kwargs.get("system_instruction", "")
+
+    @staticmethod
+    def _set_api_key() -> None:
+        """Configure the API key for the OpenAI client."""
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            openai.api_key = api_key
 
     def _normalized_prompt(self, prompt: typing.Any) -> typing.List[dict]:
         """
@@ -56,8 +64,9 @@ class OpenAIClient(LLMClient):
         )
         return completion.choices[0].message.content
 
-    @staticmethod
-    def list_models() -> typing.List[LLMSchema]:
+    @classmethod
+    def list_models(cls) -> typing.List[LLMSchema]:
+        cls._set_api_key()
         client = openai.OpenAI()
         available_models = client.models.list()
         return [
