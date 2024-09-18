@@ -50,7 +50,7 @@ class OpenAIClient(LLMClient):
         else:
             raise ValueError("Unsupported prompt type")
 
-    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3))
+    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3), reraise=True)
     def ask(self, prompt: typing.Any, *args, **kwargs) -> str:
         messages_queue = (
             [{"role": "system", "content": self.system_instruction}]
@@ -70,6 +70,6 @@ class OpenAIClient(LLMClient):
         client = openai.OpenAI()
         available_models = client.models.list()
         return [
-            LLMSchema(name=model_info.id, display_name=model_info.id)
+            LLMSchema(name=model_info.id, display_name=model_info.id, client="openai")
             for model_info in available_models
         ]

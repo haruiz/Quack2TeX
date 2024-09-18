@@ -42,7 +42,7 @@ class OllamaClient(LLMClient):
         else:
             raise ValueError("Unsupported prompt type")
 
-    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3))
+    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3), reraise=True)
     def ask(self, prompt: typing.Any, *args, **kwargs) -> str:
         messages_queue = (
             [{"role": "system", "content": self.system_instruction}]
@@ -61,6 +61,6 @@ class OllamaClient(LLMClient):
     def list_models() -> typing.List[LLMSchema]:
         ollama_models = ollama.list()
         return [
-            LLMSchema(name=model_info["model"], display_name=model_info["name"])
+            LLMSchema(name=model_info["model"], display_name=model_info["name"], client="ollama")
             for model_info in ollama_models["models"]
         ]

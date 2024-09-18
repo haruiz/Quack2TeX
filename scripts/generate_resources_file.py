@@ -11,8 +11,8 @@ def create_resource_file_from_folder_files(folder: Path, output_file: Path):
         None
     """
     print(f"Creating resource file {output_file} from files in folder {folder}")
-    image_extensions = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.tiff", "*.ico"]
-    resource_files = [file for ext in image_extensions for file in folder.rglob(ext)]
+    file_extensions = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.tiff", "*.ico", "*.qss", "*.ttf", "*.html"]
+    resource_files = [file for ext in file_extensions for file in folder.rglob(ext)]
     with open(output_file, "w") as f:
         f.write("<RCC>\n")
         f.write('  <qresource prefix="/">\n')

@@ -1,11 +1,12 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QUrl, Property, Signal, Slot
+from PySide6.QtCore import QObject, QUrl, Property, Signal, Slot, QFile
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication
+from quack2tex.resources import resources_rc # noqa: F401
 
 
 class MarkdownViewerDoc(QObject):
@@ -96,8 +97,8 @@ class MarkdownViewer(QWebEngineView):
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
         # Load the index.html file
-        index_html_file = Path(__file__).parent.joinpath("index.html")
-        local_url = QUrl.fromLocalFile(str(index_html_file))
+        #QUrl.fromLocalFile(str(Path(__file__).parent / "files/index.html"))
+        local_url = QUrl("qrc:/files/index.html")
         self.load(local_url)
 
     def set_content(self, content: str):

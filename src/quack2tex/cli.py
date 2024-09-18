@@ -2,7 +2,7 @@ import os
 
 import typer
 from dotenv import load_dotenv, find_dotenv
-from typing_extensions import Annotated
+
 import quack2tex
 
 app = typer.Typer(invoke_without_command=True)

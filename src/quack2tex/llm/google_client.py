@@ -22,7 +22,7 @@ class GoogleClient(LLMClient):
         if api_key:
             genai.configure(api_key=api_key)
 
-    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3))
+    @tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3), reraise=True)
     def ask(self, prompt: str, *args, **kwargs) -> str:
         response = self.model.generate_content(prompt, *args, **kwargs)
         return response.text
@@ -36,6 +36,7 @@ class GoogleClient(LLMClient):
                 name=model_info.name,
                 display_name=model_info.display_name,
                 description=model_info.description,
+                client="google",
             )
             for model_info in available_models
             if "generateContent" in model_info.supported_generation_methods

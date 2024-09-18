@@ -1,12 +1,24 @@
-from PySide6 import QtGui
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QWidget, QMessageBox
+import mss
+from PIL import Image
+from PySide6.QtCore import QSize, QObject, QRect
+from PySide6.QtWidgets import QApplication, QWidget, QMessageBox, QLayout
 
 
 class GuiUtils:
     """
     Utility functions for the GUI.
     """
+
+    @classmethod
+    def clear_layout(cls, layout: QLayout):
+        """
+        clear a pyqt layout
+        """
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
 
     @staticmethod
     def get_current_monitor_index(widget: QWidget) -> int:
@@ -23,7 +35,7 @@ class GuiUtils:
         return -1  # Return -1 if no monitor is found (edge case).
 
     @staticmethod
-    def get_current_monitor_geometry(widget: QWidget) -> QtGui.QScreen:
+    def get_current_monitor_geometry(widget: QWidget) -> QRect:
         """
         Get the geometry of the monitor where the widget is located.
         :param widget: The widget whose monitor geometry is needed.
@@ -31,6 +43,29 @@ class GuiUtils:
         """
         current_monitor_index = GuiUtils.get_current_monitor_index(widget)
         return QApplication.screens()[current_monitor_index].availableGeometry()
+
+
+    @staticmethod
+    def get_screen_capture_image(screen_region, monitor_index):
+        """
+        Capture the screen region
+        :param screen_region:
+        :param monitor_index:
+        :return:
+        """
+        # TODO: Add support for multiple monitors and DPI scaling factors
+
+        with mss.mss() as sct:
+            monitor = {
+                "top": screen_region[1],
+                "left": screen_region[0],
+                "width": screen_region[2],
+                "height": screen_region[3],
+            }
+            sct_img = sct.grab(monitor)
+            img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+            img.format = "PNG"
+            return img
 
     @staticmethod
     def move_window_to_center(window: QWidget):
@@ -120,28 +155,59 @@ class GuiUtils:
         y = screen_geometry.bottom() - widget.height()
         widget.move(x, y)
 
+
+
     @staticmethod
-    def show_error_message(message: str, title="Error"):
+    def get_clipboard_text():
+        """
+        Get the text from the clipboard.
+        :return: The text from the clipboard.
+        """
+        clipboard = QApplication.clipboard()
+        return clipboard.text()
+
+    @staticmethod
+    def bind(objectName, propertyName, propertyType):
+        """
+        Bind a property of a widget to a property of the parent widget.
+        :param objectName:
+        :param propertyName:
+        :param propertyType:
+        :return:
+        """
+        def getter(self):
+            widget = self.findChild(QObject, objectName)
+            prop_value = widget.property(propertyName)
+            return propertyType(prop_value)
+
+        def setter(self, value):
+            self.findChild(QObject, objectName).setProperty(propertyName, value)
+
+        return property(getter, setter)
+
+
+    @staticmethod
+    def show_error(message: str):
         """
         Show an error message dialog.
         :param message: The error message to display.
-        :param title: The title of the dialog.
         """
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)
         msg.setText(message)
-        msg.setWindowTitle(title)
+        msg.setWindowTitle("Error")
         msg.exec()
 
     @staticmethod
-    def show_info_message(message: str, title: str = "Information"):
+    def show_info(message: str):
         """
         Show an information message dialog.
         :param message: The information message to display.
-        :param title: The title of the dialog.
         """
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setText(message)
-        msg.setWindowTitle(title)
+        msg.setWindowTitle("Information")
         msg.exec()
+
+

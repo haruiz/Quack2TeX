@@ -1,0 +1,19 @@
+* {
+    font-family: "Roboto";
+    font-size: 14px;
+
+}
+QWidget {
+    background-color: #1c1919;
+    color: white;
+}
+
+QTreeView::item {
+  padding: 5px 0px;
+}
+
+QToolTip {
+   background-color: black;
+   color: white;
+   border: black solid 1px;
+}

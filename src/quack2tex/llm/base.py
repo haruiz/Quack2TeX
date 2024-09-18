@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field
 
 
 class LLMSchema(BaseModel):
+    client: str = Field(
+        ..., title="Client Name", description="The name of the client that provides the model"
+    )
     name: str = Field(
         ..., title="Model Name", description="The name of the model to use"
     )

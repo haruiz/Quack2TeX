@@ -1,135 +1,72 @@
-import mss
-from PIL import Image
-from PIL.Image import Image as PILImage
-from PySide6 import QtCore
-from PySide6.QtCore import Qt, QThreadPool, QPoint
-from PySide6.QtWidgets import (
-    QMainWindow,
-)
+import typing
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 
-from quack2tex.decors import gui_exception
+
+from PySide6 import QtCore
+from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtWidgets import QMainWindow, QToolBox
+from tqdm import tqdm
+
+from quack2tex.widgets import DuckMenu, MarkdownViewer
+from .predictions_window import PredictionsWindow
+from .screen_capture import ScreenCaptureWindow
+from .settings_window import SettingsWindow
+from quack2tex.utils import GuiUtils, Worker, work_exception
+from PIL.Image import Image as PILImage
+
 from quack2tex.llm import LLM
-from quack2tex.resources import resources_rc  # noqa: F401
-from quack2tex.utils import GuiUtils
-from quack2tex.utils import Worker
-from quack2tex.widgets import DuckFloatingMenu, MarkdownViewer
-from quack2tex.windows import ScreenCaptureWindow
 
 
 class MainWindow(QMainWindow):
     """
-    Main application window
+    Main application window.
     """
 
     def __init__(self, model_name: str = "models/gemini-1.5-flash-latest"):
         super().__init__()
-        self.setWindowFlags(
-            Qt.Window
-            | Qt.FramelessWindowHint
-            | Qt.WindowStaysOnTopHint
-            | Qt.X11BypassWindowManagerHint
-        )
+
+        # Window settings
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.setCursor(Qt.PointingHandCursor)
-        self.duck_menu = DuckFloatingMenu()
-        self.duck_menu.item_clicked.connect(self.handle_menu_item_click)
+        self.menu = DuckMenu()
+        self.menu.setFixedSize(400, 400)
+        self.menu.build_menu()
+        self.menu.item_clicked.connect(self.handle_menu_item_click)
+        self.setCentralWidget(self.menu)
         self.threadpool = QThreadPool()
-        self.setCentralWidget(self.duck_menu)
-        self.drag_pos = QPoint()
-        self.model_name = model_name
 
-    @gui_exception
-    def handle_menu_item_click(self, item_value, item_data):
-        if item_value == "close":
+
+        # drag and drop variables
+        self.is_moving = False
+        self.offset = None
+
+    def handle_menu_item_click(self, data):
+        """
+        Handle the menu item click event.
+        :param data:
+        :return:
+        """
+        menu_item_action = data.get("action", None)
+        menu_item_data = data.get("tag", None)
+        if menu_item_action == "exit":
             self.close()
-        elif item_value == "history":
-            raise NotImplementedError("History not implemented yet.")
-        elif item_data:
-            self.start_screen_capture(item_data)
-
-    def start_screen_capture(self, item_data):
-        """
-        Start the screen capture process
-        :param item_data:
-        :return:
-        """
-        monitor_index = GuiUtils.get_current_monitor_index(self)
-        screen_region = self.pick_screen_region()
-        if screen_region:
-            self.execute_screen_capture(screen_region, monitor_index, item_data)
-
-    def execute_screen_capture(self, screen_region, monitor_index, item_data):
-        """
-        Execute the screen capture and description generation
-        :param screen_region:
-        :param monitor_index:
-        :param item_data:
-        :return:
-        """
-        self.duck_menu.loading_indicator.show()
-
-        def do_work(screen_region, monitor_index):
-            """
-            Perform the screen capture and description generation
-            :param screen_region:
-            :param monitor_index:
-            :return:
-            """
-            try:
-                image = self.capture_screen_region(screen_region, monitor_index)
-                description = self.describe_image(
-                    image, item_data["system_instruction"], item_data["guidance_prompt"]
-                )
-                return None, (image, description)
-            except Exception as e:
-                return e, None
-
-        def on_complete(result):
-            """
-            Handle the completion of the screen capture and description generation
-            :param result:
-            :return:
-            """
-            self.handle_completion(result)
-
-        worker = Worker(do_work, screen_region, monitor_index)
-        worker.signals.result.connect(on_complete)
-        self.threadpool.start(worker)
-
-    def handle_completion(self, result):
-        error, result = result
-        self.duck_menu.loading_indicator.close()
-
-        if error:
-            GuiUtils.show_error_message(str(error))
-        else:
-            self.show_description_window(result[1])
-
-    def show_description_window(self, description):
-        """
-        Show the description window
-        :param description:
-        :return:
-        """
-        viewer = MarkdownViewer()
-        viewer.set_content(description)
-        self.create_window(viewer, "Output")
-
-    def create_window(self, widget, title):
-        """
-        Create a new window with the specified widget
-        :param widget:
-        :param title:
-        :return:
-        """
-        window = QMainWindow(self)
-        window.setWindowTitle(title)
-        window.setWindowFlags(Qt.Window)
-        window.setCentralWidget(widget)
-        window.adjustSize()
-        GuiUtils.move_window_to_center(window)
-        window.activateWindow()
-        window.show()
+        elif menu_item_action == "settings":
+            w = SettingsWindow()
+            w.on_settings_changed.connect(self.menu.build_menu)
+            w.exec()
+        elif menu_item_data:
+            capture_mode = menu_item_data.capture_mode
+            prompt_data = {
+                "system_instruction": menu_item_data.system_instruction,
+                "guidance_prompt": menu_item_data.guidance_prompt,
+                "models": menu_item_data.models,
+                "capture_mode": capture_mode
+            }
+            if capture_mode == "screen":
+                self.start_screen_capture(prompt_data)
+            elif capture_mode == "clipboard":
+                self.start_clipboard_text_capture(prompt_data)
 
     def pick_screen_region(self):
         """
@@ -137,72 +74,167 @@ class MainWindow(QMainWindow):
         :return:
         """
         screen_capture = ScreenCaptureWindow()
-        screen_capture.setGeometry(GuiUtils.get_current_monitor_geometry(self))
+        monitor_geometry = GuiUtils.get_current_monitor_geometry(self)
+        screen_capture.setGeometry(monitor_geometry)
         screen_capture.exec()
         return screen_capture.selected_region
 
-    @staticmethod
-    def capture_screen_region(screen_region, monitor_index):
+
+    def start_screen_capture(self, prompt_data):
         """
-        Capture the screen region
-        :param screen_region:
-        :param monitor_index:
+        Start the screen capture process
+        :param prompt_data:
         :return:
         """
-        # TODO: Add support for multiple monitors and DPI scaling factors
+        monitor_index = GuiUtils.get_current_monitor_index(self)
+        screen_region = self.pick_screen_region()
+        if screen_region:
+            @work_exception
+            def do_work():
+                """
+                Perform the screen capture
+                :return:
+                """
+                return GuiUtils.get_screen_capture_image(screen_region, monitor_index)
+            def done(result):
+                """
+                Handle the completion of the screen capture
+                :param result:
+                :return:
+                """
+                screen_capture, error = result
+                if error:
+                    GuiUtils.show_error(str(error))
+                    return
+                self.make_prompt_request(prompt_data, prompt_input=screen_capture)
+            worker = Worker(do_work)
+            worker.signals.result.connect(done)
+            self.threadpool.start(worker)
 
-        with mss.mss() as sct:
-            monitor = {
-                "top": screen_region[1],
-                "left": screen_region[0],
-                "width": screen_region[2],
-                "height": screen_region[3],
+    def start_clipboard_text_capture(self, prompt_data):
+        """
+        Start the clipboard text capture process
+        :param prompt_data:
+        :return:
+        """
+        clipboard_text = GuiUtils.get_clipboard_text()
+        if clipboard_text:
+            self.make_prompt_request(prompt_data, prompt_input=clipboard_text)
+
+    def make_prompt_request(self, prompt_data: dict, prompt_input: typing.Union[str,PILImage]):
+        """
+        Start the prompt data capture process
+        :param prompt_data:
+        :param prompt_input:
+        :param kwargs:
+        :return:
+        """
+        self.menu.loading_indicator.show()
+
+        @work_exception
+        def do_work():
+            """
+            Perform the screen capture and description generation
+            :return:
+            """
+            return self.process_prompt_request(prompt_data, prompt_input)
+
+
+        def done(result):
+            """
+            Handle the completion of the screen capture and description generation
+            :param result:
+            :return:
+            """
+            predictions, error = result
+            if error:
+                GuiUtils.show_error(str(error))
+                return
+            self.menu.loading_indicator.close()
+            self.create_output_window(predictions)
+
+        worker = Worker(do_work)
+        worker.signals.result.connect(done)
+        self.threadpool.start(worker)
+
+    def create_output_window(self, predictions: dict):
+        """
+        Create an output window
+        :param text:
+        :return:
+        """
+        window = PredictionsWindow(predictions, self)
+        window.setWindowTitle("Output")
+        window.setWindowFlags(Qt.Window)
+        window.adjustSize()
+        GuiUtils.move_window_to_center(window)
+        window.activateWindow()
+        window.show()
+
+
+    def process_prompt_request(self, prompt_data: dict, prompt_input:  typing.Union[str,PILImage]) -> dict:
+        """
+        Call the language model
+        :param prompt_data:
+        :param prompt_input:
+        :return:
+        """
+        models = prompt_data.get("models")
+        system_instruction = prompt_data.get("system_instruction")
+        guidance_prompt = prompt_data.get("guidance_prompt")
+        multimodal_prompt = [guidance_prompt, prompt_input]
+
+        def call_llm(model, system_instruction, multimodal_prompt):
+            """
+            Standalone function to call the language model
+            :param model:
+            :param system_instruction:
+            :param prompt:
+            :return:
+            """
+            llm = LLM.create(model, system_instruction=system_instruction)
+            return llm(multimodal_prompt)
+
+        models  = models.split(",") if models else []
+        results = {}
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(call_llm, model, system_instruction, multimodal_prompt): model
+                for model in models
             }
-            sct_img = sct.grab(monitor)
-            img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
-            img.format = "PNG"
-            return img
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                model_name = futures[future]
+                task_exception = future.exception()
+                results[model_name] = task_exception or future.result()
 
-    def describe_image(
-        self, image: PILImage, system_instruction: str, guidance_prompt: str
-    ):
-        """
-        Describe the image
-        :param image:
-        :param system_instruction:
-        :param guidance_prompt:
-        :return:
-        """
-        llm = LLM.create(self.model_name, system_instruction=system_instruction)
-        prompt = [guidance_prompt, image]
-        return llm(prompt)
+        return results
+
 
     def mousePressEvent(self, event):
         """
-        Handle the mouse press event
+        Triggered when the user presses the mouse button.
         :param event:
         :return:
         """
         if event.button() == Qt.LeftButton:
-            self.drag_pos = event.globalPos()
-        super().mousePressEvent(event)
+            self.is_moving = True
+            self.offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
 
     def mouseMoveEvent(self, event):
         """
-        Handle the mouse move event
+        Triggered when the user moves the mouse.
         :param event:
         :return:
         """
-        if event.buttons() == Qt.LeftButton:
-            self.move(self.pos() + event.globalPos() - self.drag_pos)
-            self.drag_pos = event.globalPos()
-        super().mouseMoveEvent(event)
+        if self.is_moving:
+            new_pos = event.globalPosition().toPoint() - self.offset
+            self.move(new_pos)
 
-    def showEvent(self, event):
+    def mouseReleaseEvent(self, event):
         """
-        Handle the show event
+        Triggered when the user releases the mouse button.
         :param event:
         :return:
         """
-        GuiUtils.move_window_to_top_center(self)
-        super().showEvent(event)
+        if event.button() == Qt.LeftButton:
+            self.is_moving = False
