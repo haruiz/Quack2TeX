@@ -31,13 +31,12 @@ class FloatingMenu(QWidget):
         if current_item := self.sender():
             current_item.toggle()
             data = current_item.data
-            print(data)
             if data:
                 self.item_clicked.emit(data)
                 self.toggle_item(current_item)
 
-            # if current_item == self.root_item and self.root_item.is_expanded():
-            #     self.root_item.toggle()
+            if current_item == self.root_item and self.root_item.is_expanded():
+                self.root_item.toggle()
 
     def toggle_item(self, item):
         """

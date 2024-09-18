@@ -164,7 +164,7 @@ class SettingsWindow(QDialog):
         icons_folder.mkdir(exist_ok=True, parents=True)
         image = Image.open(str(icon_in_path))
         image.thumbnail((64, 64))
-        icon_out_path = icons_folder / f"{item.name}.png"
+        icon_out_path = icons_folder / f"{icon_in_path.name}"
         image.save(str(icon_out_path))
         item.icon = str(icon_out_path)
 

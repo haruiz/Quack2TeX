@@ -25,7 +25,8 @@ class MarkdownViewerDoc(QObject):
         """
         Print a message
         """
-        print(msg)
+        #print(msg)
+        ...
 
     @Slot(str)
     def send_to_clipboard(self, text):
