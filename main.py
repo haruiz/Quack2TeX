@@ -54,4 +54,4 @@ def standard_deviation(data):
 
 
 if __name__ == "__main__":
-    quack2tex.run_app(model_name="models/gemini-1.5-flash-latest")
+    quack2tex.run_app()

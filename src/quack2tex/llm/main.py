@@ -30,6 +30,7 @@ if __name__ == "__main__":
     #
     # # Example usage of OpenAI LLM
     # open_ai_available_models = OpenAIClient.list_models()
+    # print(open_ai_available_models)
     # gpt4o = OpenAIClient.get_model(
     #     "gpt-4o", system_instruction="generate the output in markdown format"
     # )
@@ -47,25 +48,25 @@ if __name__ == "__main__":
     # )
     # print(llava(prompt))
 
-    models = ["gpt-4o", "llama3.1:latest", "llava:34b", "models/gemini-1.5-flash-latest"]
-
-    def call_llm(model, system_instruction, prompt):
-        llm = LLM.create(model, system_instruction=system_instruction)
-        return llm(prompt)
-
-    system_instruction = "generate the output in json format"
-    prompt = "who are you?"
-
-    with ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(call_llm, model, system_instruction, prompt): model
-            for model in models
-        }
-        results = {}
-        for future in tqdm(as_completed(futures), total=len(futures)):
-            model_name = futures[future]
-            task_exception = future.exception()
-            results[model_name] = task_exception or future.result()
-
-    for model, result in results.items():
-        print(f"{model}: {result}")
+    # models = ["gpt-4o", "llama3.1:latest", "llava:34b", "models/gemini-1.5-flash-latest"]
+    #
+    # def call_llm(model, system_instruction, prompt):
+    #     llm = LLM.create(model, system_instruction=system_instruction)
+    #     return llm(prompt)
+    #
+    # system_instruction = "generate the output in json format"
+    # prompt = "who are you?"
+    #
+    # with ThreadPoolExecutor() as executor:
+    #     futures = {
+    #         executor.submit(call_llm, model, system_instruction, prompt): model
+    #         for model in models
+    #     }
+    #     results = {}
+    #     for future in tqdm(as_completed(futures), total=len(futures)):
+    #         model_name = futures[future]
+    #         task_exception = future.exception()
+    #         results[model_name] = task_exception or future.result()
+    #
+    # for model, result in results.items():
+    #     print(f"{model}: {result}")

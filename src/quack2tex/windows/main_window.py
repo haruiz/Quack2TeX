@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtWidgets import QMainWindow, QToolBox
+from PySide6.QtWidgets import QMainWindow, QToolBox, QWidget, QVBoxLayout
 from tqdm import tqdm
 
 from quack2tex.widgets import DuckMenu, MarkdownViewer
@@ -29,13 +29,13 @@ class MainWindow(QMainWindow):
         # Window settings
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
         self.menu = DuckMenu()
         self.menu.setFixedSize(400, 400)
         self.menu.build_menu()
         self.menu.item_clicked.connect(self.handle_menu_item_click)
         self.setCentralWidget(self.menu)
         self.threadpool = QThreadPool()
-
 
         # drag and drop variables
         self.is_moving = False
@@ -118,8 +118,10 @@ class MainWindow(QMainWindow):
         :return:
         """
         clipboard_text = GuiUtils.get_clipboard_text()
-        if clipboard_text:
-            self.make_prompt_request(prompt_data, prompt_input=clipboard_text)
+        if clipboard_text is None:
+            GuiUtils.show_error("No text copied to clipboard.")
+            return
+        self.make_prompt_request(prompt_data, prompt_input=clipboard_text)
 
     def make_prompt_request(self, prompt_data: dict, prompt_input: typing.Union[str,PILImage]):
         """
@@ -205,7 +207,10 @@ class MainWindow(QMainWindow):
             for future in tqdm(as_completed(futures), total=len(futures)):
                 model_name = futures[future]
                 task_exception = future.exception()
-                results[model_name] = task_exception or future.result()
+                if task_exception:
+                    results[model_name] = str(task_exception)
+                else:
+                    results[model_name] = future.result()
 
         return results
 

@@ -6,10 +6,18 @@ Ever found yourself battling with equations while writing papers in LaTeX, wishi
 
 ## 🚀 Features
 
-- **Image to LaTeX**: Convert pictures of equations or symbols into LaTeX code—no more manual typing!
-- **Location Guessing**: Upload a photo, and Quack2Tex will try to figure out where it was taken.
-- **Recipe Finder**: Snap a picture of your meal, and Quack2Tex will tell you what dish it is.
-- **Code Explainer**: Got a screenshot of code? Quack2Tex can explain what it does.
+- **2024-10-18**: Quack2Tex v1.0.0 is out! 🎉   
+  - Added functionality for users to customize the rubber-duck menu. A new "Settings" option allows users to create and manage custom actions.
+  - Action Grouping: Users can now group actions in the settings menu for better organization and streamlined access.
+  - Multimodal Selection: Users can now choose which model or combination of models to use for generating outputs, enhancing flexibility and multimodel inference.
+  - New Input Mode: A "Clipboard" input mode has been introduced, enabling users to use clipboard content as input for selected actions.
+
+- **2024-9-10**: Quack2Tex was released! 🎉 
+
+  - **Image to LaTeX**: Convert pictures of equations or symbols into LaTeX code—no more manual typing!
+  - **Location Guessing**: Upload a photo, and Quack2Tex will try to figure out where it was taken.
+  - **Recipe Finder**: Snap a picture of your meal, and Quack2Tex will tell you what dish it is.
+  - **Code Explainer**: Got a screenshot of code? Quack2Tex can explain what it does.
 
 [//]: # (![Quack2Tex in action]&#40;https://raw.githubusercontent.com/haruiz/Quack2TeX/main/images/quack2tex.gif&#41;)
 
@@ -34,13 +42,7 @@ pip install quack2tex
 In the terminal, run the following command:
 
 ```bash
-quack2tex --help # to see the available options
-quack2tex --model <model_name> # to run the app
-
-# Example
-quack2tex --model "models/gemini-1.5-flash-latest" # fastest model!
-quack2tex --model "gpt-4o"
-quack2tex --model "llava:34b"
+quack2tex --google_api_key <GOOGLE_API_KEY> --openai_api_key <OPENAI_API_KEY>
 ```
 
 make you set the env variables `GOOGLE_API_KEY` and/or `OPENAI_API_KEY` for using google and openai models respectively. 
@@ -52,7 +54,6 @@ You can also run the app from python, see the `main.py` file for an example.
 - [x] Support clipboard copy to be used in the prompt
 - [x] Support gemini, gpt-4o, and lava models
 - [x] Allow user add custom actions to the rubber-duck menu
-- [ ] Add support for huggingface models
 - [ ] Persist images and results in a database
 - [ ] Create window, mac, and linux executables
 

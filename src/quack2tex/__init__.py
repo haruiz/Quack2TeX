@@ -14,7 +14,7 @@ from .resources import resources_rc  # noqa: F401
 
 
 
-class Quack2TexWrappedFunction(BaseModel):
+class Quack2TexWrappedFunctionResult(BaseModel):
       result: typing.Any
       latex: str 
 
@@ -49,24 +49,24 @@ def apply_theme(app: QApplication) -> None:
 
 
 # create quack2tex decorator
-def latify(**kwargs):
+def latify(model: str = None):
     """
     Decorator to convert a function to LaTeX using the LLM model
     :param kwargs:
     :return:
     """
-    llm = LLM.create(kwargs.get("model", "models/gemini-1.5-flash-latest"))
     def decorator(func):
         def wrapper(*args, **kwargs):
+            llm = LLM.create(model or "models/gemini-1.5-flash-latest")
             func_code = inspect.getsource(func)
             prompt = kwargs.get("prompt", "Generate a LaTeX representation of the following function in markdown format:")
             response = llm.ask(prompt + "\n\n" + func_code)
             result = func(*args, **kwargs)
-            return Quack2TexWrappedFunction(result=result, latex=response)
+            return Quack2TexWrappedFunctionResult(result=result, latex=response)
         return wrapper
     return decorator
 
-def run_app(model_name: str = "models/gemini-1.5-flash-latest") -> None:
+def run_app() -> None:
     """
     Run the application.
     :return:
@@ -75,6 +75,6 @@ def run_app(model_name: str = "models/gemini-1.5-flash-latest") -> None:
     app = QApplication(sys.argv)
     apply_theme(app)
     app.setOverrideCursor(QCursor(Qt.PointingHandCursor))
-    window = MainWindow(model_name)
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())

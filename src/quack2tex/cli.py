@@ -11,8 +11,7 @@ app = typer.Typer(invoke_without_command=True)
 @app.command()
 def start(
     google_api_key: str = typer.Option(None, envvar="GOOGLE_API_KEY"),
-    openai_api_key: str = typer.Option(None, envvar="OPENAI_API_KEY"),
-    model: str = "models/gemini-1.5-flash-latest",
+    openai_api_key: str = typer.Option(None, envvar="OPENAI_API_KEY")
 ):
     """
     Run the application.
@@ -24,7 +23,7 @@ def start(
         os.environ["GOOGLE_API_KEY"] = google_api_key
     if openai_api_key:
         os.environ["OPENAI_API_KEY"] = openai_api_key
-    quack2tex.run_app(model)
+    quack2tex.run_app()
 
 
 def run():

@@ -1,36 +1,32 @@
-[tool.poetry]
+[project]
 name = "quack2tex"
-version = "0.5.0"
-description = "Converts screenshots of text to LaTeX, and more using LLMs."
-authors = ["haruiz <henryruiz22@gmail.com>"]
+version = "1.0.0"
+description = "Add your description here"
 readme = "README.md"
-packages = [{include = "quack2tex", from = "src"}]
+requires-python = ">=3.10"
+dependencies = [
+    "aiosqlite>=0.20.0",
+    "google-generativeai>=0.8.3",
+    "markdown>=3.7",
+    "matplotlib>=3.9.2",
+    "mss>=9.0.2",
+    "ollama>=0.3.3",
+    "openai>=1.52.0",
+    "pillow>=11.0.0",
+    "pydantic>=2.9.2",
+    "pydantic-settings>=2.6.0",
+    "pyside6>=6.8.0.1",
+    "python-dotenv>=1.0.1",
+    "scipy>=1.14.1",
+    "sqlalchemy>=2.0.36",
+    "tenacity>=9.0.0",
+    "typer>=0.12.5",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-mss = "^9.0.1"
-pillow = "^10.4.0"
-matplotlib = "^3.9.1.post1"
-google-generativeai = "^0.7.2"
-python-dotenv = "^1.0.1"
-pyside6 = "^6.7.2"
-markdown = "^3.6"
-pydantic = "^2.8.2"
-openai = "^1.40.6"
-ollama = "^0.3.1"
-tenacity = "^9.0.0"
-typer = "^0.12.3"
-scipy = "^1.14.1"
-pydantic-settings = "^2.5.2"
-sqlalchemy = "^2.0.34"
-aiosqlite = "^0.20.0"
 
-[tool.poetry.scripts]
+[project.gui-scripts]
 quack2tex = "quack2tex.cli:run"
 
-[tool.poetry.group.dev.dependencies]
-black = "^24.8.0"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
