@@ -1,11 +1,9 @@
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QColor, QPalette
-from PySide6.QtWidgets import QMainWindow, QLabel, QStyleFactory, QToolBox
+from PySide6.QtWidgets import QToolBox, QDialog, QVBoxLayout
 
 from quack2tex.widgets import MarkdownViewer
 
 
-class PredictionsWindow(QMainWindow):
+class OutputDialog(QDialog):
     """
     A window to display the predictions output
     """
@@ -21,5 +19,7 @@ class PredictionsWindow(QMainWindow):
             viewer.set_content(prediction)
             toolbox.addItem(viewer, model)
 
-        self.setCentralWidget(toolbox)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(toolbox)
+        self.setLayout(self.layout)
 

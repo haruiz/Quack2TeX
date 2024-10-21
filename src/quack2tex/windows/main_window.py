@@ -1,21 +1,19 @@
 import typing
-from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
 
-
+from PIL.Image import Image as PILImage
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtWidgets import QMainWindow, QToolBox, QWidget, QVBoxLayout
+from PySide6.QtWidgets import QMainWindow
 from tqdm import tqdm
 
-from quack2tex.widgets import DuckMenu, MarkdownViewer
-from .predictions_window import PredictionsWindow
+from quack2tex.llm import LLM
+from quack2tex.utils import GuiUtils, Worker, work_exception
+from quack2tex.widgets import DuckMenu
+from .ouput_dialog import OutputDialog
 from .screen_capture import ScreenCaptureWindow
 from .settings_window import SettingsWindow
-from quack2tex.utils import GuiUtils, Worker, work_exception
-from PIL.Image import Image as PILImage
-
-from quack2tex.llm import LLM
 
 
 class MainWindow(QMainWindow):
@@ -149,29 +147,29 @@ class MainWindow(QMainWindow):
             :return:
             """
             predictions, error = result
+            print(predictions)
             if error:
                 GuiUtils.show_error(str(error))
                 return
             self.menu.loading_indicator.close()
-            self.create_output_window(predictions)
+            self.create_output_dialog(predictions)
 
         worker = Worker(do_work)
         worker.signals.result.connect(done)
         self.threadpool.start(worker)
 
-    def create_output_window(self, predictions: dict):
+    def create_output_dialog(self, predictions: dict):
         """
         Create an output window
         :param text:
         :return:
         """
-        window = PredictionsWindow(predictions, self)
-        window.setWindowTitle("Output")
-        window.setWindowFlags(Qt.Window)
-        window.adjustSize()
-        GuiUtils.move_window_to_center(window)
-        window.activateWindow()
-        window.show()
+        dialog = OutputDialog(predictions, parent=self)
+        dialog.setWindowTitle("Output")
+        dialog.adjustSize()
+        GuiUtils.move_window_to_center(dialog)
+        dialog.activateWindow()
+        dialog.exec()
 
 
     def process_prompt_request(self, prompt_data: dict, prompt_input:  typing.Union[str,PILImage]) -> dict:
