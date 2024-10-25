@@ -1,8 +1,8 @@
 from PySide6.QtCore import QSize, QThreadPool
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
-from quack2tex.utils import WorkerThread
 from quack2tex.widgets import FloatingMenu, LoadingIndicator, FloatingMenuItem
+from quack2tex.utils.worker import  Worker
 from quack2tex.resources import resources_rc  # noqa: F401
 
 
@@ -27,7 +27,7 @@ class DuckMenu(FloatingMenu):
         """
         Start building the menu asynchronously by fetching data from the database.
         """
-        worker = WorkerThread(self.do_build_menu)
+        worker = Worker(self.do_build_menu)
         worker.signals.result.connect(self.done_build_menu)
         self.threadpool.start(worker)
 

@@ -79,4 +79,5 @@ class LoadingIndicator(QWidget):
         """
 
         self.stop()
+
         super().closeEvent(e)

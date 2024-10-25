@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QDialog, QFormLayout, QVBoxLayout, QTextEdit, QSiz
     QLabel
 
 from quack2tex import LLM
-from quack2tex.utils import GuiUtils, WorkerThread, work_exception
+from quack2tex.utils import GuiUtils, Worker, work_exception
 from quack2tex.widgets import FileUploader, ModelPicker
 
 
@@ -175,7 +175,7 @@ class MenuItemForm(QDialog, QObject):
             self.on_widget_loaded.emit(data)
 
 
-        worker = WorkerThread(do_work)
+        worker = Worker(do_work)
         worker.signals.result.connect(done)
         self.thread_pool.start(worker)
 

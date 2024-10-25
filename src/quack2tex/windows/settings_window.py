@@ -10,7 +10,7 @@ from PIL import Image
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.repository.models import MenuItem
-from quack2tex.utils import WorkerThread, LibUtils, work_exception, GuiUtils
+from quack2tex.utils import Worker, LibUtils, work_exception, GuiUtils
 from quack2tex.widgets.forms import MenuItemForm
 from quack2tex.resources import resources_rc # noqa
 
@@ -147,7 +147,7 @@ class SettingsWindow(QDialog):
         :param item_id:
         :return:
         """
-        work = WorkerThread(self.do_save_or_update_item, item)
+        work = Worker(self.do_save_or_update_item, item)
         work.signals.result.connect(self.on_save_or_update_done)
         self.thread_pool.start(work)
 
@@ -260,7 +260,7 @@ class SettingsWindow(QDialog):
         """
         Populate the treeview with data from the database.
         """
-        work = WorkerThread(self.do_fetch_tree_data)
+        work = Worker(self.do_fetch_tree_data)
         work.signals.result.connect(self.on_tree_data_fetched)
         self.thread_pool.start(work)
 

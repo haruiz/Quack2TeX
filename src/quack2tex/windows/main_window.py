@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QMainWindow
 from tqdm import tqdm
 
 from quack2tex.llm import LLM
-from quack2tex.utils import GuiUtils, Worker, work_exception
+from quack2tex.utils import GuiUtils, Worker, work_exception, WorkerManager
 from quack2tex.widgets import DuckMenu
 from .ouput_dialog import OutputDialog
 from .screen_capture import ScreenCaptureWindow
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
     Main application window.
     """
 
-    def __init__(self, model_name: str = "models/gemini-1.5-flash-latest"):
+    def __init__(self):
         super().__init__()
 
         # Window settings
@@ -204,13 +204,13 @@ class MainWindow(QMainWindow):
             }
             for future in tqdm(as_completed(futures), total=len(futures)):
                 model_name = futures[future]
-                task_exception = future.exception()
-                if task_exception:
-                    results[model_name] = str(task_exception)
-                else:
+                try:
                     results[model_name] = future.result()
+                except Exception as e:
+                    results[model_name] = f"Error by running inference on model {model_name}: {e}"
 
         return results
+
 
 
     def mousePressEvent(self, event):
