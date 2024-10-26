@@ -206,7 +206,7 @@ class SettingsWindow(QDialog):
             return
 
         ids = [item.tag.id for item in checked_items]
-        work = WorkerThread(self.do_delete_items, ids)
+        work = Worker(self.do_delete_items, ids)
         work.signals.result.connect(self.on_delete_done)
         self.thread_pool.start(work)
 

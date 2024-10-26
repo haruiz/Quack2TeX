@@ -78,6 +78,7 @@ class MainWindow(QMainWindow):
         return screen_capture.selected_region
 
 
+
     def start_screen_capture(self, prompt_data):
         """
         Start the screen capture process
@@ -121,6 +122,30 @@ class MainWindow(QMainWindow):
             return
         self.make_prompt_request(prompt_data, prompt_input=clipboard_text)
 
+    @work_exception
+    def make_prompt_request_do_work(self, prompt_data: dict, prompt_input: typing.Union[str,PILImage]):
+        """
+        Start the prompt data capture process
+        :param prompt_data:
+        :param prompt_input:
+        :param kwargs:
+        :return:
+        """
+        return self.process_prompt_request(prompt_data, prompt_input)
+
+    def make_prompt_request_done(self, result):
+        """
+        Handle the completion of the screen capture and description generation
+        :param result:
+        :return:
+        """
+        predictions, error = result
+        if error:
+            GuiUtils.show_error(str(error))
+            return
+        self.menu.loading_indicator.close()
+        self.create_output_dialog(predictions)
+
     def make_prompt_request(self, prompt_data: dict, prompt_input: typing.Union[str,PILImage]):
         """
         Start the prompt data capture process
@@ -131,31 +156,8 @@ class MainWindow(QMainWindow):
         """
         self.menu.loading_indicator.show()
 
-        @work_exception
-        def do_work():
-            """
-            Perform the screen capture and description generation
-            :return:
-            """
-            return self.process_prompt_request(prompt_data, prompt_input)
-
-
-        def done(result):
-            """
-            Handle the completion of the screen capture and description generation
-            :param result:
-            :return:
-            """
-            predictions, error = result
-            print(predictions)
-            if error:
-                GuiUtils.show_error(str(error))
-                return
-            self.menu.loading_indicator.close()
-            self.create_output_dialog(predictions)
-
-        worker = Worker(do_work)
-        worker.signals.result.connect(done)
+        worker = Worker(self.make_prompt_request_do_work, prompt_data, prompt_input)
+        worker.signals.result.connect(self.make_prompt_request_done)
         self.threadpool.start(worker)
 
     def create_output_dialog(self, predictions: dict):
@@ -171,6 +173,18 @@ class MainWindow(QMainWindow):
         dialog.activateWindow()
         dialog.exec()
 
+    @staticmethod
+    def call_llm(model, system_instruction, multimodal_prompt):
+        """
+        Standalone function to call the language model
+        :param model:
+        :param system_instruction:
+        :param multimodal_prompt:
+        :return:
+        """
+        llm = LLM.create(model, system_instruction=system_instruction)
+        return llm(multimodal_prompt)
+
 
     def process_prompt_request(self, prompt_data: dict, prompt_input:  typing.Union[str,PILImage]) -> dict:
         """
@@ -184,22 +198,11 @@ class MainWindow(QMainWindow):
         guidance_prompt = prompt_data.get("guidance_prompt")
         multimodal_prompt = [guidance_prompt, prompt_input]
 
-        def call_llm(model, system_instruction, multimodal_prompt):
-            """
-            Standalone function to call the language model
-            :param model:
-            :param system_instruction:
-            :param prompt:
-            :return:
-            """
-            llm = LLM.create(model, system_instruction=system_instruction)
-            return llm(multimodal_prompt)
-
         models  = models.split(",") if models else []
         results = {}
         with ThreadPoolExecutor() as executor:
             futures = {
-                executor.submit(call_llm, model, system_instruction, multimodal_prompt): model
+                executor.submit(self.call_llm, model, system_instruction, multimodal_prompt): model
                 for model in models
             }
             for future in tqdm(as_completed(futures), total=len(futures)):
@@ -208,7 +211,6 @@ class MainWindow(QMainWindow):
                     results[model_name] = future.result()
                 except Exception as e:
                     results[model_name] = f"Error by running inference on model {model_name}: {e}"
-
         return results
 
 
