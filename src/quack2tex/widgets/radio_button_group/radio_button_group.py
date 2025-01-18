@@ -1,8 +1,8 @@
 import typing
 
-from PySide6.QtCore import Signal, Property
-from PySide6.QtWidgets import QWidget, QButtonGroup, QRadioButton, QVBoxLayout, QLabel, QHBoxLayout
-from scipy.linalg import pinvh
+from quack2tex.pyqt import (
+    Signal, Property, QWidget, QButtonGroup, QRadioButton, QHBoxLayout
+)
 
 
 class RadioButtonGroup(QWidget):

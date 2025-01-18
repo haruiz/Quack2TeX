@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QToolBox, QDialog, QVBoxLayout
+from quack2tex.pyqt import QToolBox, QDialog, QVBoxLayout
 
 from quack2tex.widgets import MarkdownViewer
 

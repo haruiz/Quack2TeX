@@ -1,4 +1,8 @@
-from PySide6.QtCore import QSize, QThreadPool
+from email.policy import default
+
+from numpy.f2py.crackfortran import debug
+
+from quack2tex.pyqt import QSize, QThreadPool
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.widgets import FloatingMenu, LoadingIndicator, FloatingMenuItem
@@ -15,6 +19,7 @@ class DuckMenu(FloatingMenu):
         self.threadpool = QThreadPool()
         self.loading_indicator = LoadingIndicator(":icons/loading.gif", QSize(200, 100), self)
         self.loading_indicator.hide()
+        self.default_icon_path = ":icons/gears.png"
 
     def clear_menu(self):
         """
@@ -80,16 +85,16 @@ class DuckMenu(FloatingMenu):
             {"icon": ":icons/gears.png", "tooltip": "Settings", "data": {"action": "settings"}},
         ]
         for item in default_items:
-            self.create_menu_item(root_item, item)
+            self.create_default_item_menu(root_item, item)
 
-    def create_menu_item(self, parent_item, action):
+    def create_default_item_menu(self, parent_item, action):
         """
         Create a menu item and attach it to a parent item.
         :param parent_item: The parent FloatingMenuItem.
         :param action: Dictionary containing icon, tooltip, and data for the item.
         """
         item = FloatingMenuItem(
-            action["icon"],
+            action["icon"] or self.default_icon_path,
             QSize(parent_item.size().width() // 2, parent_item.size().height() // 2),
             distance_to_center=parent_item.distance_to_center // 2,
             start_angle=0,
@@ -107,17 +112,16 @@ class DuckMenu(FloatingMenu):
         :param root_item: The root FloatingMenuItem.
         """
         for db_item in tree:
-            self.add_menu_item_recursive(db_item, root_item)
+            self.add_item_menu_recursive(db_item, root_item)
 
-    def add_menu_item_recursive(self, db_item, parent_item):
+    def add_item_menu_recursive(self, db_item, parent_item):
         """
         Recursively add items to the menu based on the database item hierarchy.
         :param db_item: Database item containing child items.
         :param parent_item: The parent FloatingMenuItem to which children will be added.
         """
         child_item = FloatingMenuItem(
-            db_item.icon,
-            #QSize(parent_item.size().width() // 2, parent_item.size().height() // 2),
+            db_item.icon or self.default_icon_path,
             QSize(32, 32),
             distance_to_center=parent_item.distance_to_center // 2,
             start_angle=0,
@@ -131,4 +135,4 @@ class DuckMenu(FloatingMenu):
         parent_item.add_child(child_item)
 
         for db_child_item in db_item.children:
-            self.add_menu_item_recursive(db_child_item, child_item)
+            self.add_item_menu_recursive(db_child_item, child_item)

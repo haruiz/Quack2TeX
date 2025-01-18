@@ -1,13 +1,13 @@
-from PySide6.QtCore import Qt, Property, QThreadPool, Signal
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QListWidget, QListWidgetItem, QWidget, QVBoxLayout, QLabel, QMenu
-
+from quack2tex.pyqt import (
+    Qt, Property, QThreadPool, Signal, QIcon, QListWidget, QListWidgetItem,
+    QWidget, QVBoxLayout, QLabel, QMenu
+)
 from quack2tex.resources import resources_rc  # noqa: F401
 
 
 class ModelPicker(QWidget):
     """
-    A widget that allows the user to select a model
+    A widget that allows the user to select a model.
     """
     on_loaded_models = Signal()
 
@@ -20,22 +20,21 @@ class ModelPicker(QWidget):
         self.thread_pool = QThreadPool()
 
         self.list_widget = QListWidget()
-        self.list_widget.setSelectionMode(QListWidget.MultiSelection)
+        self.list_widget.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
 
         self.selected_models_label = QLabel()
         self.layout.addWidget(self.list_widget)
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.open_context_menu)
 
     def set_data(self, models):
         """
-        Load the models
-        :return:
+        Load the models into the list widget.
         """
         for model in models:
             model_item = QListWidgetItem(model.display_name)
-            model_item.setData(Qt.UserRole, model.name)
+            model_item.setData(Qt.ItemDataRole.UserRole, model.name)
             if model.client == "ollama":
                 model_item.setIcon(QIcon(":/icons/ollama.png"))
             elif model.client == "google":
@@ -46,44 +45,41 @@ class ModelPicker(QWidget):
 
     def get_selected_models(self):
         """
-        Get the selected models
-        :return:
+        Get the selected models.
         """
         if not self.list_widget.selectedItems():
             return ""
-        return ",".join([item.data(Qt.UserRole) for item in self.list_widget.selectedItems()])
+        return ",".join([item.data(Qt.ItemDataRole.UserRole) for item in self.list_widget.selectedItems()])
 
     def set_selected_models(self, models: str):
         """
-        Set the selected models
-        :param models: the models to select
-        :return:
+        Set the selected models.
+        :param models: The models to select.
         """
         models_list = models.split(",") if models else []
-        for item in self.list_widget.findItems("", Qt.MatchContains):
-            if item.data(Qt.UserRole) in models_list:
+        for item in self.list_widget.findItems("", Qt.MatchFlag.MatchContains):
+            if item.data(Qt.ItemDataRole.UserRole) in models_list:
                 item.setSelected(True)
 
     models = Property(str, get_selected_models, set_selected_models)
 
     def open_context_menu(self, position):
         """
-        Open the context menu
-        :param position: the position to open the context menu
-        :return:
+        Open the context menu at the specified position.
+        :param position: The position to open the context menu.
         """
         context_menu = QMenu()
-        action = context_menu.addAction("clear selection")
+        action = context_menu.addAction("Clear selection")
         action.triggered.connect(lambda: self.list_widget.clearSelection())
-        context_menu.exec_(self.mapToGlobal(position))
-
+        context_menu.exec(self.mapToGlobal(position))
 
     def on_selection_changed(self):
         """
-        Handler for when the selection changes
-        :return:
+        Handler for when the selection changes.
         """
-        selected_models = [item.data(Qt.UserRole) for item in self.list_widget.selectedItems()]
+        selected_models = [
+            item.data(Qt.ItemDataRole.UserRole) for item in self.list_widget.selectedItems()
+        ]
         self.selected_models_label.setText(', '.join(selected_models))
         self.selected_models_label.adjustSize()
         self.layout.addWidget(self.selected_models_label)

@@ -1,7 +1,6 @@
-from PySide6 import QtCore
-from PySide6.QtCore import Signal, QSize, QTimer
-from PySide6.QtGui import QColor, QIcon
-from PySide6.QtWidgets import QGraphicsOpacityEffect, QPushButton, QGraphicsDropShadowEffect
+from quack2tex.pyqt import (
+    Signal, QSize, QIcon, QPushButton
+)
 
 
 class ImageButton(QPushButton):

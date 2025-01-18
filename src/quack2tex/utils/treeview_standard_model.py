@@ -1,7 +1,4 @@
-import itertools
-from PySide6 import QtCore
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QStandardItemModel, QStandardItem, QIcon
+from quack2tex.pyqt import Qt,QStandardItemModel, QStandardItem
 
 
 class TreeViewStandardItemModel(QStandardItemModel):
@@ -29,7 +26,7 @@ class TreeViewStandardItemModel(QStandardItemModel):
         Return the flags for the given index.
         """
         flags = super().flags(index)
-        flags &= ~QtCore.Qt.ItemIsEditable
+        flags &= ~Qt.ItemFlag.ItemIsEditable  # Corrected flag usage
         return flags
 
     def remove_checked_items(self):
@@ -44,7 +41,7 @@ class TreeViewStandardItemModel(QStandardItemModel):
             for row in range(parent.rowCount()):
                 child_item = parent.child(row)
                 # Check if the item is checked
-                if child_item.checkState() == Qt.Checked:
+                if child_item.checkState() == Qt.CheckState.Checked:  # Corrected check state usage
                     rows_to_remove.append(row)
                 else:
                     # Recursively check the item's children
@@ -64,7 +61,7 @@ class TreeViewStandardItemModel(QStandardItemModel):
         def recursive_check_items(parent: QStandardItem):
             for row in range(parent.rowCount()):
                 child_item = parent.child(row)
-                child_item.setCheckState(Qt.Checked)
+                child_item.setCheckState(Qt.CheckState.Checked)  # Corrected check state usage
                 recursive_check_items(child_item)
 
         root = self.invisibleRootItem()
@@ -77,7 +74,7 @@ class TreeViewStandardItemModel(QStandardItemModel):
         def recursive_uncheck_items(parent: QStandardItem):
             for row in range(parent.rowCount()):
                 child_item = parent.child(row)
-                child_item.setCheckState(Qt.Unchecked)
+                child_item.setCheckState(Qt.CheckState.Unchecked)  # Corrected check state usage
                 recursive_uncheck_items(child_item)
 
         root = self.invisibleRootItem()
@@ -97,8 +94,6 @@ class TreeViewStandardItemModel(QStandardItemModel):
             # Add as a child to the given parent item
             parent_item.appendRow(new_item)
 
-
-
     def find_checked_nodes_recursive(self, parent_item=None):
         """
         Find all checked items in the model.
@@ -109,23 +104,22 @@ class TreeViewStandardItemModel(QStandardItemModel):
 
         for row in range(parent_item.rowCount()):
             child_item = parent_item.child(row)
-            if child_item.checkState() == Qt.Checked:
+            if child_item.checkState() == Qt.CheckState.Checked:  # Corrected check state usage
                 checked_items.append(child_item)
             checked_items += self.find_checked_nodes_recursive(child_item)
 
         return checked_items
 
-
-    def set_data(self, index, value, role=Qt.EditRole):
+    def set_data(self, index, value, role):
         """
         Set the data for the given index and role.
         """
         item = self.itemFromIndex(index)
         if item:
-            if role == Qt.CheckStateRole:
-                item.setCheckState(Qt.Checked if value else Qt.Unchecked)
+            if role == Qt.ItemDataRole.CheckStateRole:  # Corrected role usage
+                item.setCheckState(Qt.CheckState.Checked if value else Qt.CheckState.Unchecked)  # Corrected check state usage
                 return True
-            elif role == Qt.EditRole:
+            elif role == Qt.ItemDataRole.EditRole:  # Corrected role usage
                 item.setText(value)
                 return True
         return False

@@ -1,10 +1,21 @@
 from typing import Any
 
-from PySide6.QtCore import Qt, QObject, QThreadPool, Signal, Property
-from PySide6.QtWidgets import QDialog, QFormLayout, QVBoxLayout, QTextEdit, QSizePolicy, QComboBox, QDialogButtonBox, \
-    QLabel
-
 from quack2tex import LLM
+from quack2tex.pyqt import (
+    QDialog,
+    QVBoxLayout,
+    QFormLayout,
+    QTextEdit,
+    QSizePolicy,
+    QDialogButtonBox,
+    QComboBox,
+    Qt,
+    QObject,
+    Signal,
+    QLabel,
+    QThreadPool,
+    Property
+)
 from quack2tex.utils import GuiUtils, Worker, work_exception
 from quack2tex.widgets import FileUploader, ModelPicker
 
@@ -25,7 +36,7 @@ class CaptureModeComboBox(QComboBox):
         Get the capture mode
         :return:
         """
-        return self.currentData(Qt.UserRole)
+        return self.currentData(Qt.ItemDataRole.UserRole)  # Corrected role usage
 
     def set_capture_mode(self, mode):
         """
@@ -34,21 +45,17 @@ class CaptureModeComboBox(QComboBox):
         :return:
         """
         for i in range(self.count()):
-            if self.itemData(i, Qt.UserRole) == mode:
+            if self.itemData(i, Qt.ItemDataRole.UserRole) == mode:  # Corrected role usage
                 self.setCurrentIndex(i)
                 break
 
     capture_mode = Property(str, get_capture_mode, set_capture_mode)
 
 
-
 class MenuItemForm(QDialog, QObject):
     """
     A custom form for editing menu items
     """
-    """
-       A dialog for adding a new menu item
-       """
     name = GuiUtils.bind("txt_name", "plainText", str)
     icon = GuiUtils.bind("file_icon_uploader", "file_path", str)
     system_instruction = GuiUtils.bind("txt_system_instructions", "plainText", str)
@@ -68,7 +75,7 @@ class MenuItemForm(QDialog, QObject):
         self.setFixedSize(400, 400)
 
         self.loading_label = QLabel("Loading data...")
-        self.loading_label.setAlignment(Qt.AlignCenter)
+        self.loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Corrected alignment flag usage
         self.on_widget_loaded.connect(self.on_widget_loaded_handler)
         self.layout.addWidget(self.loading_label)
         self.thread_pool = QThreadPool()
@@ -84,8 +91,8 @@ class MenuItemForm(QDialog, QObject):
         GuiUtils.clear_layout(self.layout)
         # Form Layout
         form_layout = QFormLayout()
-        form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        form_layout.setLabelAlignment(Qt.AlignRight)
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)  # Corrected alignment flag usage
 
         self.txt_name = QTextEdit(self)
         self.txt_name.setFixedHeight(30)
@@ -93,43 +100,43 @@ class MenuItemForm(QDialog, QObject):
         # dont allow rich text
         self.txt_name.setAcceptRichText(False)
         self.txt_name.setPlaceholderText("Enter menu item name...")
-        self.txt_name.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.txt_name.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Corrected QSizePolicy usage
         form_layout.addRow("Name:", self.txt_name)
 
         self.file_icon_uploader = FileUploader(self, file_filter="Images (*.png *.jpg *.jpeg)")
         self.file_icon_uploader.setObjectName("file_icon_uploader")
         self.file_icon_uploader.file_path_edit.setPlaceholderText("Select icon file...")
-        self.file_icon_uploader.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.file_icon_uploader.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Corrected QSizePolicy usage
         form_layout.addRow("Icon:", self.file_icon_uploader)
 
         self.txt_system_instructions = QTextEdit(self)
         self.txt_system_instructions.setObjectName("txt_system_instructions")
         self.txt_system_instructions.setAcceptRichText(False)
         self.txt_system_instructions.setPlaceholderText("Enter system instructions...")
-        self.txt_system_instructions.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.txt_system_instructions.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Corrected QSizePolicy usage
         form_layout.addRow("System Instruction:", self.txt_system_instructions)
 
         self.txt_guidance_prompt = QTextEdit(self)
         self.txt_guidance_prompt.setObjectName("txt_guidance_prompt")
         self.txt_guidance_prompt.setAcceptRichText(False)
         self.txt_guidance_prompt.setPlaceholderText("Enter guidance prompt...")
-        self.txt_guidance_prompt.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.txt_guidance_prompt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Corrected QSizePolicy usage
         form_layout.addRow("Guidance Prompt:", self.txt_guidance_prompt)
 
         # Model Selection (Multiple Selection)
         self.list_model_picker = ModelPicker(self)
         self.list_model_picker.setObjectName("list_model_picker")
         self.list_model_picker.set_data(data["models"])
-        self.list_model_picker.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.list_model_picker.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Corrected QSizePolicy usage
         form_layout.addRow("Select Models:", self.list_model_picker)
 
         self.cbx_capture_mode = CaptureModeComboBox(self)
         self.cbx_capture_mode.setObjectName("cbx_capture_mode")
-        self.cbx_capture_mode.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.cbx_capture_mode.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Corrected QSizePolicy usage
         form_layout.addRow("Capture Mode:", self.cbx_capture_mode)
 
         # Dialog Buttons (OK and Cancel)
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)  # Corrected enum usage
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         form_layout.addRow(button_box)
@@ -196,32 +203,7 @@ class MenuItemForm(QDialog, QObject):
         """
         Accept the dialog and close it
         """
-        if any([not self.name, not self.icon]):
+        if not self.name:
             GuiUtils.show_error("Name and icon are required.")
             return
         return super(MenuItemForm, self).accept()
-
-def main():
-    """
-    Main function
-    :return:
-    """
-    import sys
-    from PySide6.QtWidgets import QApplication
-
-    app = QApplication(sys.argv)
-    form = MenuItemForm()
-    form.form_data = {
-        "name": "Test",
-        "icon": "icon.png",
-        "system_instruction": "System Instruction",
-        "guidance_prompt": "Guidance Prompt",
-        "models": "phi3.5:latest",
-        "capture_mode": "clipboard"
-    }
-    form.show()
-    sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()
-

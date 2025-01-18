@@ -1,6 +1,7 @@
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QLineEdit
-
+from quack2tex.pyqt import (
+    Signal,
+    QLineEdit
+)
 
 class ClickableLineEdit(QLineEdit):
     """

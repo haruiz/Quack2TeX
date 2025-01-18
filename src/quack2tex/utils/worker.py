@@ -1,9 +1,7 @@
 import sys
 import traceback
 
-from PySide6.QtCore import Signal
-from PySide6.QtCore import Slot
-from PySide6.QtCore import QObject, QRunnable
+from quack2tex.pyqt import Signal, Slot, QObject, QRunnable
 
 
 class WorkerSignals(QObject):

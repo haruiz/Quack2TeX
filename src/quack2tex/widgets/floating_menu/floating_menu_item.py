@@ -1,10 +1,16 @@
 import math
 
-from PySide6 import QtCore
-from PySide6.QtCore import QSize, QParallelAnimationGroup, QPropertyAnimation, QPoint, QEasingCurve, QTimer, QRect
-from PySide6.QtGui import QColor, QRegion, QPainter, QBrush
-from PySide6.QtWidgets import QGraphicsDropShadowEffect, QGraphicsOpacityEffect
-
+from quack2tex.pyqt import (
+    QGraphicsDropShadowEffect,
+    QColor,
+    QTimer,
+    QSize,
+    QParallelAnimationGroup,
+    QGraphicsOpacityEffect,
+    QPropertyAnimation,
+    QPoint,
+    QEasingCurve,
+)
 from quack2tex.widgets import ImageButton
 
 
@@ -24,8 +30,6 @@ class FloatingMenuItem(ImageButton):
         self.data = data
         self._expanded = False
         self._collapsed = True
-
-
 
     @property
     def data(self):
@@ -66,7 +70,7 @@ class FloatingMenuItem(ImageButton):
         """
         self.effect = QGraphicsOpacityEffect()
         self.setGraphicsEffect(self.effect)
-        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation = QPropertyAnimation(self.effect, b"opacity")
         self.animation.setDuration(300)
         self.animation.setStartValue(1)
         self.animation.setEndValue(0)
@@ -80,7 +84,7 @@ class FloatingMenuItem(ImageButton):
 
         self.effect = QGraphicsOpacityEffect()
         self.setGraphicsEffect(self.effect)
-        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation = QPropertyAnimation(self.effect, b"opacity")
         self.animation.setDuration(300)
         self.animation.setStartValue(0)
         self.animation.setEndValue(1)
@@ -139,14 +143,14 @@ class FloatingMenuItem(ImageButton):
         animation_group = QParallelAnimationGroup(self)
         for i, child in enumerate(self.children):
             child.move(QPoint(center.x() - child.width() // 2, center.y() - child.height() // 2))
-            x = center.x() + self.distance_to_center * math.cos(angles_rad[i]) - child.width() // 2
-            y = center.y() + self.distance_to_center * math.sin(angles_rad[i]) - child.height() // 2
+            x = math.ceil(center.x() + self.distance_to_center * math.cos(angles_rad[i]) - child.width() // 2)
+            y = math.ceil(center.y() + self.distance_to_center * math.sin(angles_rad[i]) - child.height() // 2)
             child.show()
 
             anim = QPropertyAnimation(child, b"pos")
             anim.setEndValue(QPoint(x, y))
             anim.setDuration(500)
-            anim.setEasingCurve(QEasingCurve.OutBounce)
+            anim.setEasingCurve(QEasingCurve.Type.OutBounce)
             animation_group.addAnimation(anim)
             animation_group.finished.connect(lambda: self.expand_animation_group_finished(child))
 
@@ -179,7 +183,7 @@ class FloatingMenuItem(ImageButton):
             anim = QPropertyAnimation(child, b"pos")
             anim.setEndValue(QPoint(center.x() - child.width() // 2, center.y() - child.height() // 2))
             anim.setDuration(500)
-            anim.setEasingCurve(QEasingCurve.OutBounce)
+            anim.setEasingCurve(QEasingCurve.Type.OutBounce)
             anim.finished.connect(lambda: self.collapse_animation_group_finished(child))
             animation_group.addAnimation(anim)
 
@@ -201,10 +205,13 @@ class FloatingMenuItem(ImageButton):
         :param parent_item:
         :return:
         """
-        for child in parent_item.children:
-            child.hide()
-            if child.children:
-                self.hide_children(child)
+        try:
+            for child in parent_item.children:
+                child.hide()
+                if child.children:
+                    self.hide_children(child)
+        except Exception as e:
+            print(e)
 
     def collapse_siblings(self):
         """
@@ -218,7 +225,7 @@ class FloatingMenuItem(ImageButton):
             anim = QPropertyAnimation(sibling, b"pos")
             anim.setEndValue(QPoint(center.x() - sibling.width() // 2, center.y() - sibling.height() // 2))
             anim.setDuration(500)
-            anim.setEasingCurve(QEasingCurve.OutBounce)
+            anim.setEasingCurve(QEasingCurve.Type.OutBounce)
             anim.finished.connect(sibling.hide)
             group.addAnimation(anim)
         group.start()
@@ -235,8 +242,8 @@ class FloatingMenuItem(ImageButton):
         for i, sibling in enumerate(self.root.children):
             if sibling == self:
                 continue
-            x = root_center.x() + self.root.distance_to_center * math.cos(angles_rad[i]) - sibling.width() // 2
-            y = root_center.y() + self.root.distance_to_center * math.sin(angles_rad[i]) - sibling.height() // 2
+            x = math.ceil(root_center.x() + self.root.distance_to_center * math.cos(angles_rad[i]) - sibling.width() // 2)
+            y = math.ceil(root_center.y() + self.root.distance_to_center * math.sin(angles_rad[i]) - sibling.height() // 2)
             sibling.move(x, y)
             sibling.setVisible(True)
             sibling.unfade()

@@ -1,6 +1,6 @@
-from PySide6.QtCore import Qt, QPoint, QRect, QSize
-from PySide6.QtWidgets import QDialog, QRubberBand
-
+from quack2tex.pyqt import (
+    Qt, QPoint, QRect, QSize,QDialog, QRubberBand
+)
 
 class ScreenCaptureWindow(QDialog):
     """
@@ -11,10 +11,10 @@ class ScreenCaptureWindow(QDialog):
         super().__init__()
         self.setWindowTitle("Select Region to Capture")
         self.setWindowOpacity(0.3)
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.start_point = QPoint()
         self.end_point = QPoint()
-        self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
+        self.rubber_band = QRubberBand(QRubberBand.Shape.Rectangle, self)
         self.selected_region = None
 
     def mousePressEvent(self, event):
@@ -51,7 +51,7 @@ class ScreenCaptureWindow(QDialog):
         :param event:
         :return:
         """
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.selected_region = None
             self.close()
 

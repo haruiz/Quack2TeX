@@ -1,11 +1,9 @@
 import io
 
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QMovie, QCloseEvent, QShowEvent, QShortcut
-from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout
+from quack2tex.pyqt import (
+    Qt, QSize, QMovie, QCloseEvent, QShowEvent, QShortcut, QLabel, QWidget, QVBoxLayout, QResource
+)
 from PIL import Image
-from PySide6.QtCore import QResource
-
 from quack2tex.utils import GuiUtils
 
 
@@ -19,7 +17,7 @@ class LoadingIndicator(QWidget):
 
         self.setWindowTitle("Loading Indicator")
         # self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         resource = QResource(gif_path)
         image_data = resource.data()
@@ -47,14 +45,14 @@ class LoadingIndicator(QWidget):
         """
         Start the loading animation
         """
-        if self.movie.state() == QMovie.NotRunning:
+        if self.movie.state() == QMovie.MovieState.NotRunning:
             self.movie.start()
 
     def stop(self):
         """
         Stop the loading animation
         """
-        if self.movie.state() == QMovie.Running:
+        if self.movie.state() == QMovie.MovieState.Running:
             self.movie.stop()
 
     def showEvent(self, e: QShowEvent):
@@ -68,7 +66,7 @@ class LoadingIndicator(QWidget):
         """
         :param event: QKeyEvent
         """
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.close()
         else:
             super().keyPressEvent(event)

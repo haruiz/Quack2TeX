@@ -1,9 +1,8 @@
 from enum import Enum
 
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
-
+from quack2tex.pyqt import (
+    Qt, QTimer, QPropertyAnimation, QEasingCurve,QFont,QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
+)
 
 class ToastType(Enum):
     INFO = "info"
@@ -19,8 +18,8 @@ class Toast(QWidget):
     def __init__(self, message, message_type=ToastType):
         super().__init__()
         self.setWindowTitle("Toast")
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         font = QFont()
         font.setPointSize(14)
@@ -50,7 +49,7 @@ class Toast(QWidget):
         self.setGraphicsEffect(self.effect)
         self.animation = QPropertyAnimation(self.effect, b"opacity")
         self.animation.setDuration(500)  # 500 milliseconds
-        self.animation.setEasingCurve(QEasingCurve.InOutQuad)
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
 
     def showEvent(self, event):
         """

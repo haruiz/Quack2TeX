@@ -1,20 +1,21 @@
-import sys
 from pathlib import Path
 from typing import Optional, List
 
-from PySide6.QtCore import QModelIndex, QThreadPool, Qt, QSize, Signal
-from PySide6.QtGui import QIcon, QStandardItem
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QToolBar, QMessageBox, QApplication, QTreeView
 from PIL import Image
+from PIL.Image import Image as PILImage
 
+from quack2tex.pyqt import (
+    QModelIndex, QThreadPool, QSize, Signal, QIcon, QStandardItem, QDialog, QVBoxLayout, QPushButton, QToolBar,
+    QApplication, QTreeView
+)
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.repository.models import MenuItem
+from quack2tex.resources import resources_rc  # noqa
+from quack2tex.utils import TreeViewStandardItemModel  # Replace CustomModel with this
 from quack2tex.utils import Worker, LibUtils, work_exception, GuiUtils
 from quack2tex.widgets.forms import MenuItemForm
-from quack2tex.resources import resources_rc # noqa
-
-from quack2tex.utils import TreeViewStandardItemModel  # Replace CustomModel with this
+import sys
 
 
 class SettingsWindow(QDialog):
@@ -35,28 +36,42 @@ class SettingsWindow(QDialog):
         self.treeview = QTreeView()
 
         self.layout.addWidget(self.toolbar)
+        self.layout.addWidget(self.treeview)
 
         self.btn_check_all = QPushButton()
         self.btn_check_all.setIcon(QIcon(":/icons/check-all.png"))
         self.btn_check_all.setIconSize(QSize(16, 16))
         self.btn_check_all.clicked.connect(self.check_all_items)
+        self.btn_check_all.setToolTip("Check all items")
         self.toolbar.addWidget(self.btn_check_all)
 
         self.btn_uncheck_all = QPushButton()
         self.btn_uncheck_all.setIcon(QIcon(":/icons/uncheck-all.png"))
         self.btn_uncheck_all.setIconSize(QSize(16, 16))
         self.btn_uncheck_all.clicked.connect(self.uncheck_all_items)
+        self.btn_uncheck_all.setToolTip("Uncheck all items")
         self.toolbar.addWidget(self.btn_uncheck_all)
 
-        self.btn_delete = QPushButton()
-        self.btn_delete.setIcon(QIcon(":/icons/delete.png"))
-        self.btn_delete.setIconSize(QSize(16, 16))
-        self.btn_delete.clicked.connect(self.delete_selected_items)
-        self.toolbar.addWidget(self.btn_delete)
+        self.btn_refresh = QPushButton()
+        self.btn_refresh.setIcon(QIcon(":/icons/refresh.png"))
+        self.btn_refresh.setIconSize(QSize(16, 16))
+        self.btn_refresh.clicked.connect(self.populate_treeview)
+        self.btn_refresh.setToolTip("Refresh items")
+        self.toolbar.addWidget(self.btn_refresh)
+
+        self.btn_clear_selection = QPushButton()
+        self.btn_clear_selection.setIconSize(QSize(16, 16))
+        self.btn_clear_selection.setIcon(QIcon(":/icons/broom.png"))
+        self.btn_clear_selection.setToolTip("Clear items selection")
+        self.btn_clear_selection.clicked.connect(self.treeview.clearSelection)
+        self.toolbar.addWidget(self.btn_clear_selection)
+
+        self.toolbar.addSeparator()
 
         self.btn_add = QPushButton()
         self.btn_add.setIcon(QIcon(":/icons/add.png"))
         self.btn_add.setIconSize(QSize(16, 16))
+        self.btn_add.setToolTip("Add new item")
         self.btn_add.clicked.connect(self.add_new_item)
         self.toolbar.addWidget(self.btn_add)
 
@@ -64,25 +79,19 @@ class SettingsWindow(QDialog):
         self.btn_edit.setIcon(QIcon(":/icons/edit.png"))
         self.btn_edit.setIconSize(QSize(16, 16))
         self.btn_edit.clicked.connect(self.edit_selected_item)
+        self.btn_edit.setToolTip("Edit selected item")
         self.toolbar.addWidget(self.btn_edit)
 
-        self.btn_refresh = QPushButton()
-        self.btn_refresh.setIcon(QIcon(":/icons/refresh.png"))
-        self.btn_refresh.setIconSize(QSize(16, 16))
-        self.btn_refresh.clicked.connect(self.populate_treeview)
-        self.toolbar.addWidget(self.btn_refresh)
-
-        self.btn_clear_selection = QPushButton()
-        self.btn_clear_selection.setIconSize(QSize(16, 16))
-        self.btn_clear_selection.setIcon(QIcon(":/icons/broom.png"))
-        self.btn_clear_selection.clicked.connect(self.treeview.clearSelection)
-        self.toolbar.addWidget(self.btn_clear_selection)
+        self.btn_delete = QPushButton()
+        self.btn_delete.setIcon(QIcon(":/icons/delete.png"))
+        self.btn_delete.setIconSize(QSize(16, 16))
+        self.btn_delete.clicked.connect(self.delete_selected_items)
+        self.btn_delete.setToolTip("Delete checked items")
+        self.toolbar.addWidget(self.btn_delete)
 
         self.thread_pool = QThreadPool()
         model = TreeViewStandardItemModel(["Name"])
         self.treeview.setModel(model)
-
-        self.layout.addWidget(self.treeview)
         self.populate_treeview()
 
     def check_all_items(self) -> None:
@@ -131,7 +140,7 @@ class SettingsWindow(QDialog):
             "guidance_prompt": item_model.guidance_prompt
         }
         dialog_result = edit_item_form.exec()
-        if dialog_result == QDialog.Accepted:
+        if dialog_result == QDialog.DialogCode.Accepted:
             item_model.name = edit_item_form.name
             item_model.icon = edit_item_form.icon
             item_model.models = edit_item_form.models
@@ -158,15 +167,16 @@ class SettingsWindow(QDialog):
         :param item:
         :return:
         """
-        icon_in_path = Path(item.icon)
-        quack2tex_home = LibUtils.get_lib_home()
-        icons_folder = quack2tex_home / "icons"
-        icons_folder.mkdir(exist_ok=True, parents=True)
-        image = Image.open(str(icon_in_path))
-        image.thumbnail((64, 64))
-        icon_out_path = icons_folder / f"{icon_in_path.name}"
-        image.save(str(icon_out_path))
-        item.icon = str(icon_out_path)
+        if item.icon:
+            icon_in_path = Path(item.icon)
+            quack2tex_home = LibUtils.get_lib_home()
+            icons_folder = quack2tex_home / "icons"
+            icons_folder.mkdir(exist_ok=True, parents=True)
+            image: PILImage = Image.open(str(icon_in_path))
+            image.thumbnail((64, 64))
+            icon_out_path = icons_folder / f"{icon_in_path.name}"
+            image.save(str(icon_out_path))
+            item.icon = str(icon_out_path)
 
         try:
             with get_db_session() as session:
@@ -194,6 +204,7 @@ class SettingsWindow(QDialog):
             return
         GuiUtils.show_info("Item updated successfully.")
         self.on_settings_changed.emit()
+        self.populate_treeview()
 
     def delete_selected_items(self) -> None:
         """
@@ -204,6 +215,7 @@ class SettingsWindow(QDialog):
         if not checked_items:
             GuiUtils.show_error("No items selected.")
             return
+        self.populate_treeview()
 
         ids = [item.tag.id for item in checked_items]
         work = Worker(self.do_delete_items, ids)
@@ -229,6 +241,7 @@ class SettingsWindow(QDialog):
         model: TreeViewStandardItemModel = self.treeview.model()
         model.remove_checked_items()
         model.layoutChanged.emit()
+        self.populate_treeview()
 
     def add_new_item(self) -> None:
         """
@@ -244,7 +257,7 @@ class SettingsWindow(QDialog):
         new_item_form = MenuItemForm()
         new_item_form.setFixedSize(600, 500)
         dialog_result = new_item_form.exec()
-        if dialog_result == QDialog.Accepted:
+        if dialog_result == QDialog.DialogCode.Accepted:
             new_item = MenuItem(
                 name=new_item_form.name,
                 icon=new_item_form.icon,
@@ -280,32 +293,46 @@ class SettingsWindow(QDialog):
         """
         self.treeview.model().reset_model()
 
-        def populate_children(tree_item_data: MenuItem, parent_item: QStandardItem) -> None:
-            """
-            Populate the children of the tree item.
-            :param tree_item_data:
-            :param parent_item:
-            :return:
-            """
-            for child_item_data in tree_item_data.children:
-                child_item = QStandardItem(child_item_data.name)
-                child_item.setCheckable(True)
-                child_item.setIcon(QIcon(child_item_data.icon))
-                child_item.tag = child_item_data
-                parent_item.appendRow(child_item)
-                populate_children(child_item_data, child_item)
-
+        # Main iteration to populate the root items
         for tree_item_data in result:
             treeview_item = QStandardItem(tree_item_data.name)
             treeview_item.setCheckable(True)
-            treeview_item.setIcon(QIcon(tree_item_data.icon))
+            treeview_item_icon = QIcon(":/icons/gears.png")
+            if tree_item_data.icon:
+                treeview_item_icon = QIcon(tree_item_data.icon)
+            treeview_item.setIcon(treeview_item_icon)
             treeview_item.tag = tree_item_data
             self.treeview.model().appendRow(treeview_item)
-            populate_children(tree_item_data, treeview_item)
+            self.populate_children(tree_item_data, treeview_item)
+
+    def populate_children(self,tree_item_data: MenuItem, parent_item: QStandardItem) -> None:
+        """
+        Populate the children of the tree item in an optimized, non-recursive manner.
+        :param tree_item_data: The MenuItem containing child items.
+        :param parent_item: The QStandardItem that will be the parent of child items.
+        :return: None
+        """
+        items_to_add = []
+
+        # Pre-create child items and prepare them for appending
+        for child_item_data in tree_item_data.children:
+            child_item = QStandardItem(child_item_data.name)
+            child_item.setCheckable(True)
+            child_item.setIcon(QIcon(child_item_data.icon))
+            child_item.tag = child_item_data
+            items_to_add.append(child_item)
+
+        # Append all child items at once
+        if items_to_add:
+            parent_item.appendRows(items_to_add)
+
+        # Now populate the children for all the new child items in a non-recursive manner
+        for child_item, child_data in zip(items_to_add, tree_item_data.children):
+            self.populate_children(child_data, child_item)
 
 
 if __name__ == '__main__':
-    app = QApplication([])
+    app = QApplication(sys.argv)
     win = SettingsWindow()
     win.show()
     sys.exit(app.exec())

@@ -1,7 +1,7 @@
-from importlib.metadata import files
-
-from PySide6.QtCore import Property
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QWidget, QPushButton
+from quack2tex.pyqt import (
+    Property,
+QFileDialog, QHBoxLayout, QWidget, QPushButton
+)
 from quack2tex.widgets import ClickableLineEdit
 
 

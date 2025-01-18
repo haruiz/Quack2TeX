@@ -3,13 +3,15 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 
 from PIL.Image import Image as PILImage
-from PySide6 import QtCore
-from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtWidgets import QMainWindow
 from tqdm import tqdm
 
 from quack2tex.llm import LLM
-from quack2tex.utils import GuiUtils, Worker, work_exception, WorkerManager
+from quack2tex.pyqt import (
+    Qt,
+    QThreadPool,
+    QMainWindow,
+)
+from quack2tex.utils import GuiUtils, Worker, work_exception
 from quack2tex.widgets import DuckMenu
 from .ouput_dialog import OutputDialog
 from .screen_capture import ScreenCaptureWindow
@@ -25,8 +27,8 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Window settings
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.menu = DuckMenu()
         self.menu.setFixedSize(400, 400)
@@ -65,6 +67,8 @@ class MainWindow(QMainWindow):
                 self.start_screen_capture(prompt_data)
             elif capture_mode == "clipboard":
                 self.start_clipboard_text_capture(prompt_data)
+            else:
+                self.make_prompt_request(prompt_data, prompt_input="")
 
     def pick_screen_region(self):
         """
@@ -221,7 +225,7 @@ class MainWindow(QMainWindow):
         :param event:
         :return:
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.is_moving = True
             self.offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
 
@@ -241,5 +245,5 @@ class MainWindow(QMainWindow):
         :param event:
         :return:
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.is_moving = False

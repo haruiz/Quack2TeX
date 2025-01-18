@@ -1,7 +1,6 @@
 import mss
 from PIL import Image
-from PySide6.QtCore import QSize, QObject, QRect
-from PySide6.QtWidgets import QApplication, QWidget, QMessageBox, QLayout
+from quack2tex.pyqt import QLayout, QWidget, QApplication, QRect, QSize, QObject, QMessageBox
 
 
 class GuiUtils:
@@ -193,7 +192,7 @@ class GuiUtils:
         :param message: The error message to display.
         """
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Critical)
+        msg.setIcon(QMessageBox.Icon.Critical)
         msg.setText(message)
         msg.setWindowTitle("Error")
         msg.exec()
@@ -205,7 +204,7 @@ class GuiUtils:
         :param message: The information message to display.
         """
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
+        msg.setIcon(QMessageBox.Icon.Information)
         msg.setText(message)
         msg.setWindowTitle("Information")
         msg.exec()

@@ -57,6 +57,8 @@ def receive_after_delete(mapper, connection, target):
     """
     # remove logo file
     print(f"Deleting logo file: {target.icon}")
+    if not target.icon:
+        return
     logo_path = Path(target.icon)
     if logo_path.exists():
         os.remove(logo_path)

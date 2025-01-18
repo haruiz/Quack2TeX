@@ -1,17 +1,16 @@
+import inspect
 import sys
+import typing
 
-from PySide6 import QtGui
-from PySide6.QtCore import Qt, QFile
-from PySide6.QtGui import QPalette, QColor, QIcon, QCursor
-from PySide6.QtWidgets import QApplication, QStyleFactory
+from pydantic import BaseModel
+
+from quack2tex.pyqt import (
+    QApplication, Qt, QIcon, QFile, QPalette, QColor, QCursor, QFontDatabase,QIODevice
+)
 from .llm import LLM
+from .resources import resources_rc  # noqa: F401
 from .utils import GuiUtils
 from .windows import MainWindow
-from pydantic import BaseModel
-import inspect
-import typing
-from .resources import resources_rc  # noqa: F401
-
 
 
 class Quack2TexWrappedFunctionResult(BaseModel):
@@ -25,26 +24,26 @@ def apply_theme(app: QApplication) -> None:
     :return:
     """
     app.setStyle("Fusion")
-    QtGui.QFontDatabase.addApplicationFont(":/fonts/Roboto/Roboto-Regular.ttf")
+    QFontDatabase.addApplicationFont(":/fonts/Roboto/Roboto-Regular.ttf")
     app.setWindowIcon(QIcon(":icons/rubber-duck.png"))
     file = QFile(":/styles/style.qss")
-    file.open(QFile.ReadOnly | QFile.Text)
+    file.open(QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text)
     style_sheet = file.readAll().data().decode("utf-8")
     app.setStyleSheet(style_sheet)
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(53, 53, 53))
-    palette.setColor(QPalette.WindowText, Qt.white)
-    palette.setColor(QPalette.Base, QColor(25, 25, 25))
-    palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-    palette.setColor(QPalette.ToolTipBase, Qt.white)
-    palette.setColor(QPalette.ToolTipText, Qt.white)
-    palette.setColor(QPalette.Text, Qt.white)
-    palette.setColor(QPalette.Button, QColor(53, 53, 53))
-    palette.setColor(QPalette.ButtonText, Qt.white)
-    palette.setColor(QPalette.BrightText, Qt.red)
-    palette.setColor(QPalette.Link, QColor(42, 130, 218))
-    palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    palette.setColor(QPalette.HighlightedText, Qt.black)
+    palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("white"))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.Text, QColor("white"))
+    palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor("red"))
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("black"))
     QApplication.setPalette(palette)
 
 
@@ -74,7 +73,7 @@ def run_app() -> None:
 
     app = QApplication(sys.argv)
     apply_theme(app)
-    app.setOverrideCursor(QCursor(Qt.PointingHandCursor))
+    app.setOverrideCursor(QCursor(Qt.CursorShape.PointingHandCursor))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

@@ -1,12 +1,9 @@
 import sys
-from pathlib import Path
 
-from PySide6.QtCore import QObject, QUrl, Property, Signal, Slot, QFile
-from PySide6.QtWebChannel import QWebChannel
-from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEnginePage
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QApplication
-from quack2tex.resources import resources_rc # noqa: F401
+from quack2tex.pyqt import (
+    QUrl, QWebChannel, QApplication, QWebEngineView, QObject, Signal, Slot, Property, QWebEnginePage, QWebEngineSettings
+)
+from quack2tex.resources import resources_rc  # noqa: F401
 
 
 class MarkdownViewerDoc(QObject):
@@ -74,7 +71,7 @@ class CustomWebEnginePage(QWebEnginePage):
         """
         # Automatically grant all requested permissions
         self.setFeaturePermission(
-            securityOrigin, feature, QWebEnginePage.PermissionGrantedByUser
+            securityOrigin, feature, QWebEnginePage.PermissionPolicy.PermissionGrantedByUser
         )
 
 
@@ -95,7 +92,7 @@ class MarkdownViewer(QWebEngineView):
         self.channel.registerObject("qtViewerDoc", self.doc)
         # Enable local content access
         self.page().settings().setAttribute(
-            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
         # Load the index.html file
         #QUrl.fromLocalFile(str(Path(__file__).parent / "files/index.html"))
