@@ -10,26 +10,34 @@ app = typer.Typer(invoke_without_command=True)
 
 @app.command()
 def start(
-    google_api_key: str = typer.Option(None, envvar="GOOGLE_API_KEY"),
-    openai_api_key: str = typer.Option(None, envvar="OPENAI_API_KEY")
+    gemini_api_key: str = typer.Option(None, envvar="GEMINI_API_KEY", help="Google Gemini API key"),
+    openai_api_key: str = typer.Option(None, envvar="OPENAI_API_KEY", help="OpenAI API key"),
+    anthropic_api_key: str = typer.Option(None, envvar="ANTHROPIC_API_KEY", help="Anthropic API key"),
+    groq_api_key: str = typer.Option(None, envvar="GROQ_API_KEY", help="Groq API key"),
 ):
     """
-    Run the application.
-    :param model: The model to use.
-    :param google_api_key: The Google API key.
-    :param openai_api_key: The OpenAI API key.
+    Start the Quack2Tex application with optional LLM API keys.
+    You can provide keys via command-line or environment variables.
     """
-    if google_api_key:
-        os.environ["GOOGLE_API_KEY"] = google_api_key
-    if openai_api_key:
-        os.environ["OPENAI_API_KEY"] = openai_api_key
+    # Set API keys in environment if provided
+    api_keys = {
+        "GEMINI_API_KEY": gemini_api_key,
+        "OPENAI_API_KEY": openai_api_key,
+        "ANTHROPIC_API_KEY": anthropic_api_key,
+        "GROQ_API_KEY": groq_api_key,
+    }
+
+    for key, value in api_keys.items():
+        if value:
+            os.environ[key] = value
+
+    # Start the main app
     quack2tex.run_app()
 
 
 def run():
     """
-    Run the application.
-    :return:
+    Entry point: Load environment variables and invoke CLI app.
     """
     load_dotenv(find_dotenv())
     app()

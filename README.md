@@ -39,15 +39,71 @@ pip install quack2tex
 
 ## 📚 Usage
 
-In the terminal, run the following command:
+You can run **Quack2Tex** in multiple ways depending on your preference.
+
+### 🏁 Quick Start (via terminal)
+
+Run the app with your API keys as command-line options:
 
 ```bash
-quack2tex --google_api_key <GOOGLE_API_KEY> --openai_api_key <OPENAI_API_KEY>
+quack2tex --gemini-api-key <your_gemini_api_key> \
+          --openai-api-key <your_openai_api_key> \
+          --anthropic-api-key <your_anthropic_api_key> \
+          --groq-api-key <your_groq_api_key>
 ```
 
-make you set the env variables `GOOGLE_API_KEY` and/or `OPENAI_API_KEY` for using google and openai models respectively. 
-You can also use LLava models through the ollama api.
-You can also run the app from python, see the `main.py` file for an example.
+### 🌱 Alternative: Using Environment Variables
+
+You can set the API keys as environment variables:
+
+```bash
+export GEMINI_API_KEY=<your_gemini_api_key>
+export OPENAI_API_KEY=<your_openai_api_key>
+export ANTHROPIC_API_KEY=<your_anthropic_api_key>
+export GROQ_API_KEY=<your_groq_api_key>
+
+quack2tex
+```
+
+### 📄 `.env` File Support
+
+You can also create a `.env` file in the root directory with the following contents:
+
+```env
+GEMINI_API_KEY=<your_gemini_api_key>
+OPENAI_API_KEY=<your_openai_api_key>
+ANTHROPIC_API_KEY=<your_anthropic_api_key>
+GROQ_API_KEY=<your_groq_api_key>
+```
+
+The app will automatically load these variables using `python-dotenv`.
+
+### 🛠️ Help & Options
+
+To explore all available options:
+
+```bash
+quack2tex --help
+```
+
+### 🧠 Optional: Using LLava Models via Ollama
+
+Quack2Tex also supports LLava models via the [Ollama API](https://ollama.com). Be sure to have Ollama running and properly configured.
+
+### 🐍 Running from Python
+
+You can also run the app programmatically. Check out the `main.py` file for an example:
+
+```python
+from dotenv import load_dotenv, find_dotenv
+import quack2tex
+# Load environment variables
+load_dotenv(find_dotenv())
+# Run the app
+quack2tex.run_app()
+```
+
+Let me know if you'd like to include examples, expected outputs, or Docker support!
 
 ## 📝 Roadmap
 
