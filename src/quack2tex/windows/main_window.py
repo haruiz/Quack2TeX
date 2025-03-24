@@ -5,7 +5,7 @@ from concurrent.futures import as_completed
 from PIL.Image import Image as PILImage
 from tqdm import tqdm
 
-from quack2tex.llm import LLM
+from modihub.llm import LLM
 from quack2tex.pyqt import (
     Qt,
     QThreadPool,

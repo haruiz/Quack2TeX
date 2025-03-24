@@ -3,7 +3,7 @@ import sys
 from quack2tex.pyqt import (
     QUrl, QWebChannel, QApplication, QWebEngineView, QObject, Signal, Slot, Property, QWebEnginePage, QWebEngineSettings
 )
-from quack2tex.resources import resources_rc  # noqa: F401
+from quack2tex.resources import *  # noqa: F401
 
 
 class MarkdownViewerDoc(QObject):

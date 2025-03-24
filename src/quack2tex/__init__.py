@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from quack2tex.pyqt import (
     QApplication, Qt, QIcon, QFile, QPalette, QColor, QCursor, QFontDatabase,QIODevice
 )
-from .llm import LLM
-from .resources import resources_rc  # noqa: F401
+from modihub.llm import LLM
+from .resources import * # noqa
 from .utils import GuiUtils
 from .windows import MainWindow
 

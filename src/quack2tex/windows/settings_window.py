@@ -11,7 +11,7 @@ from quack2tex.pyqt import (
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.repository.models import MenuItem
-from quack2tex.resources import resources_rc  # noqa
+from quack2tex.resources import *  # noqa
 from quack2tex.utils import TreeViewStandardItemModel  # Replace CustomModel with this
 from quack2tex.utils import Worker, LibUtils, work_exception, GuiUtils
 from quack2tex.widgets.forms import MenuItemForm

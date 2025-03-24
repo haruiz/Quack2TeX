@@ -2,7 +2,7 @@ from quack2tex.pyqt import (
     Qt, Property, QThreadPool, Signal, QIcon, QListWidget, QListWidgetItem,
     QWidget, QVBoxLayout, QLabel, QMenu
 )
-from quack2tex.resources import resources_rc  # noqa: F401
+from quack2tex.resources import *  # noqa: F401
 
 
 class ModelPicker(QWidget):
@@ -32,15 +32,18 @@ class ModelPicker(QWidget):
         """
         Load the models into the list widget.
         """
+        icons = {
+            "ollama": QIcon(":/icons/ollama.png"),
+            "google": QIcon(":/icons/google.png"),
+            "openai": QIcon(":/icons/openai.png"),
+            "anthropic": QIcon(":/icons/anthropic.png"),
+            "groq": QIcon(":/icons/groq.png"),
+        }
         for model in models:
             model_item = QListWidgetItem(model.display_name)
             model_item.setData(Qt.ItemDataRole.UserRole, model.name)
-            if model.client == "ollama":
-                model_item.setIcon(QIcon(":/icons/ollama.png"))
-            elif model.client == "google":
-                model_item.setIcon(QIcon(":/icons/gemini.png"))
-            elif model.client == "openai":
-                model_item.setIcon(QIcon(":/icons/openai.png"))
+            if model.client in icons:
+                model_item.setIcon(icons[model.client])
             self.list_widget.addItem(model_item)
 
     def get_selected_models(self):

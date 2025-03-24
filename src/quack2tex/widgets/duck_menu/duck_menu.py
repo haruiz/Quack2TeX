@@ -7,7 +7,7 @@ from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.widgets import FloatingMenu, LoadingIndicator, FloatingMenuItem
 from quack2tex.utils.worker import  Worker
-from quack2tex.resources import resources_rc  # noqa: F401
+from quack2tex.resources import *  # noqa: F401
 
 
 class DuckMenu(FloatingMenu):
@@ -19,7 +19,7 @@ class DuckMenu(FloatingMenu):
         self.threadpool = QThreadPool()
         self.loading_indicator = LoadingIndicator(":icons/loading.gif", QSize(200, 100), self)
         self.loading_indicator.hide()
-        self.default_icon_path = ":icons/gears.png"
+        self.default_icon_path = ":icons/ai.png"
 
     def clear_menu(self):
         """

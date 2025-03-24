@@ -1,6 +1,6 @@
 [project]
 name = "quack2tex"
-version = "1.0.4"
+version = "1.0.5"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,12 +22,65 @@ dependencies = [
     "typer>=0.12.5",
     "pyqt6>=6.8.0",
     "pyqt6-webengine>=6.8.0",
+    "modihub",
+    "pyqt6-qt6>=6.8.1",
 ]
 
 
 [project.scripts]
 quack2tex = "quack2tex.cli:run"
 
+[project.optional-dependencies]
+dev = [
+    "pyside6>=6.8.2.1",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv.sources]
+modihub = { path = "../modihub" , editable = true }
+
+
+[tool.hatch.build]
+exclude = [
+    "tests/",
+    "docs/",
+    "examples/",
+    "assets/",
+    "keys/",
+    ".git/",
+    ".github/",
+    "scripts/",
+    "configs/",
+    "README.md",
+    ".env",
+    "config.json",
+    "*/**/.sh",
+    "Makefile",
+    "cloudbuild.yaml",
+    "*/**/Dockerfile",
+    "Dockerfile",
+    "requirements.txt",
+    "docker/",
+    "*.sh",
+    "*.yml",
+    "analysis/",
+    "data/",
+    "images/",
+    "ui/",
+    "web.ps1",
+    ".vscode/",
+    ".idea/",
+    ".gitignore",
+    ".gitattributes",
+    ".gitmodules",
+    ".gitkeep",
+    ".gitlab-ci.yml",
+    ".gitlab/",
+    ".gitlab-ci/",
+    ".gitlab-ci.yml",
+    ".python-version"
+
+]

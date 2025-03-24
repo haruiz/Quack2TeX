@@ -3,13 +3,17 @@
     <file>icons/add.png</file>
     <file>icons/gears.png</file>
     <file>icons/openai.png</file>
+    <file>icons/groq.png</file>
     <file>icons/check-all.png</file>
     <file>icons/gemini.png</file>
     <file>icons/uncheck-all.png</file>
     <file>icons/ollama.png</file>
     <file>icons/delete.png</file>
+    <file>icons/anthropic.png</file>
     <file>icons/rubber-duck.png</file>
     <file>icons/edit.png</file>
+    <file>icons/google.png</file>
+    <file>icons/ai.png</file>
     <file>icons/broom.png</file>
     <file>icons/refresh.png</file>
     <file>icons/close.png</file>
