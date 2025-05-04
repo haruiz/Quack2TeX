@@ -10,7 +10,7 @@ Certainly! Here's the revised version without emoticons:
 
 ---
 
-- **2025-05-01** – Quack2Tex v1.0.8 is out! 🎉  
+- **2025-05-01** – Quack2Tex v1.0.9 is out! 🎉  
 
   This update introduces several powerful new features and improvements:
   * **Voice Input Support**: You can now interact with Quack2Tex using voice, in addition to screen, clipboard, and text input.
@@ -150,6 +150,12 @@ If you run into any problems, check out the [Issues](https://github.com/haruiz/Q
 
 Quack2Tex is open-source and available under the MIT License—see the [LICENSE](LICENSE) file for more details.
 
+## Actions
+
+| Action                          | Description                                                                               |
+|---------------------------------|-------------------------------------------------------------------------------------------|
+| `move the duck`                 | Move the duck to a different location on the screen pressing command/ctrl and dragging it. |
+| `expand or execute action menu` | Double click on the icon                                                                  |
 ## 📧 Contact
 
 Got questions? You can reach out to me at [henryruiz22@gmail.com](mailto:henryruiz22@gmail.com).

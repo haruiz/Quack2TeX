@@ -1,6 +1,6 @@
 [project]
 name = "quack2tex"
-version = "1.0.8"
+version = "1.0.9"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
