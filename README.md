@@ -6,10 +6,29 @@ Ever found yourself battling with equations while writing papers in LaTeX, wishi
 
 ## 🚀 Features
 
+Certainly! Here's the revised version without emoticons:
+
+---
+
+- **2025-05-01** – Quack2Tex v1.0.8 is out! 🎉  
+
+  This update introduces several powerful new features and improvements:
+  * **Voice Input Support**: You can now interact with Quack2Tex using voice, in addition to screen, clipboard, and text input.
+  * **Database Persistence**: Prompts and responses now can be saved to a local database for future reference.
+  * **Quick Action**: Hold the mouse button on the rubber duck icon to quickly trigger actions. These can be customized from the **Settings** menu.
+  > **Important:**
+  > This release includes a major update to the database schema.
+  > To ensure the new features work correctly, you must **delete the old database file** before running the app.
+  **Database location:** `~/.quack2tex/quack2tex.db`
+  **To delete it, run:**
+  ```bash
+  rm ~/.quack2tex/quack2tex.db
+  ```
+
 - **2024-10-18**: Quack2Tex v1.0.0 is out! 🎉   
   - Added functionality for users to customize the rubber-duck menu. A new "Settings" option allows users to create and manage custom actions.
   - Action Grouping: Users can now group actions in the settings menu for better organization and streamlined access.
-  - Multimodal Selection: Users can now choose which model or combination of models to use for generating outputs, enhancing flexibility and multimodel inference.
+  - Multi-Model Selection: Users can now choose which model or combination of models to use for generating outputs, enhancing flexibility and multimodel inference.
   - New Input Mode: A "Clipboard" input mode has been introduced, enabling users to use clipboard content as input for selected actions.
 
 - **2024-9-10**: Quack2Tex was released! 🎉 
@@ -110,7 +129,7 @@ Let me know if you'd like to include examples, expected outputs, or Docker suppo
 - [x] Support clipboard copy to be used in the prompt
 - [x] Support gemini, gpt-4o, and lava models
 - [x] Allow user add custom actions to the rubber-duck menu
-- [ ] Persist images and results in a database
+- [x] Persist images and results in a database
 - [ ] Create window, mac, and linux executables
 
 ## 🤝 Contributing

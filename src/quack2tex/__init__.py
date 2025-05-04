@@ -11,7 +11,7 @@ from modihub.llm import LLM
 from .resources import * # noqa
 from .utils import GuiUtils
 from .windows import MainWindow
-
+from quack2tex.repository.db.sync_session import init_db
 
 class Quack2TexWrappedFunctionResult(BaseModel):
       result: typing.Any
@@ -59,7 +59,7 @@ def latify(model: str = None):
             llm = LLM.create(model or "models/gemini-1.5-flash-latest")
             func_code = inspect.getsource(func)
             prompt = kwargs.get("prompt", "Generate a LaTeX representation of the following function in markdown format:")
-            response = llm.ask(prompt + "\n\n" + func_code)
+            response = llm(prompt + "\n\n" + func_code)
             result = func(*args, **kwargs)
             return Quack2TexWrappedFunctionResult(result=result, latex=response)
         return wrapper
@@ -70,9 +70,9 @@ def run_app() -> None:
     Run the application.
     :return:
     """
-
     app = QApplication(sys.argv)
-    apply_theme(app)
+    # apply_theme(app)
+    init_db()
     app.setOverrideCursor(QCursor(Qt.CursorShape.PointingHandCursor))
     window = MainWindow()
     window.show()

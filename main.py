@@ -54,4 +54,8 @@ def standard_deviation(data):
 
 
 if __name__ == "__main__":
+    # out = sqrt(4)
+    # print(out.latex)
+    # print(out.result)
+
     quack2tex.run_app()

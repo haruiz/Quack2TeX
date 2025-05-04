@@ -5,7 +5,6 @@ from quack2tex.pyqt import (
 )
 from quack2tex.resources import *  # noqa: F401
 
-
 class MarkdownViewerDoc(QObject):
     """
     A simple QObject to expose the markdown viewer to the web page
@@ -99,16 +98,27 @@ class MarkdownViewer(QWebEngineView):
         local_url = QUrl("qrc:/files/index.html")
         self.load(local_url)
 
-    def set_content(self, content: str):
+    @property
+    def content(self):
+        """
+        Get the content of the markdown viewer
+        """
+        return self.doc.get_content()
+
+    @content.setter
+    def content(self, content: str):
         """
         Set the content of the markdown viewer
+        :param content:
+        :return:
         """
+        # Convert markdown to HTML
         self.doc.set_content(content)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     viewer = MarkdownViewer()
-    viewer.set_content("# Hi\n\nThis is a simple markdown viewer.")
+    viewer.content = "# Hi\n\nThis is a simple markdown viewer."
     viewer.show()
     sys.exit(app.exec())

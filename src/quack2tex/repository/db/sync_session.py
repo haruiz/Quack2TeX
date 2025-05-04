@@ -10,11 +10,8 @@ sessionmanager = SessionManager(
     async_mode=False,
     engine_kwargs={"echo": False, "poolclass": NullPool},
 )
-
-def get_db_session(*args, **kwargs) -> Session:
-    """
-    Get database session
-    """
-    drop_all = kwargs.pop("drop_all", False)
+def init_db(drop_all = False):
     sessionmanager.init(drop_all=drop_all)
+
+def get_db_session(*args, **kwargs):
     return sessionmanager.session(*args, **kwargs)

@@ -22,7 +22,41 @@ class MenuItemRepository:
             MenuItemRepository.populate_item_children(session, child)
 
     @classmethod
-    def build_tree(cls, session: Session) -> List[MenuItem]:
+    def fetch_root_item_data(cls, session: Session) -> Optional[MenuItem]:
+        """
+        Fetches the root node of the menu tree.
+
+        Args:
+            session (Session): The active database session.
+
+        Returns:
+            Optional[MenuItem]: The root menu item, if it exists.
+        """
+        return session.query(MenuItem).filter(MenuItem.is_root == True).first()
+
+    @classmethod
+    def fetch_root_children_data(cls, session: Session, parent_id: int) -> List[MenuItem]:
+        """
+        Fetches child items of a given parent menu item.
+
+        Args:
+            session (Session): The active database session.
+            parent_id (int): The ID of the parent menu item.
+
+        Returns:
+            List[MenuItem]: A list of child menu items.
+        """
+        menu_items: List[MenuItem] = []
+        root_items: List[MenuItem] = session.query(MenuItem).filter(MenuItem.parent_id == parent_id).all()
+
+        for root_item in root_items:
+            cls.populate_item_children(session, root_item)
+            menu_items.append(root_item)
+
+        return menu_items
+
+    @classmethod
+    def fetch_tree_data(cls, session: Session) -> List[MenuItem]:
         """
         Constructs a tree structure of menu items with parent-child relationships.
 

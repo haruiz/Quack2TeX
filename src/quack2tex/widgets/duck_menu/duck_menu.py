@@ -1,16 +1,14 @@
-from email.policy import default
-
-from numpy.f2py.crackfortran import debug
-
-from quack2tex.pyqt import QSize, QThreadPool
+from quack2tex.pyqt import QSize, QThreadPool, Signal
 from quack2tex.repository import MenuItemRepository
 from quack2tex.repository.db.sync_session import get_db_session
-from quack2tex.widgets import FloatingMenu, LoadingIndicator, FloatingMenuItem
-from quack2tex.utils.worker import  Worker
 from quack2tex.resources import *  # noqa: F401
+from quack2tex.utils.worker import Worker
+from quack2tex.widgets import FloatingMenu, LoadingIndicator, FloatingMenuItem
 
 
 class DuckMenu(FloatingMenu):
+    on_hold = Signal()
+
     def __init__(self, parent=None):
         """
         Initialize the DuckMenu with a loading indicator and a thread pool for asynchronous tasks.
@@ -32,26 +30,29 @@ class DuckMenu(FloatingMenu):
         """
         Start building the menu asynchronously by fetching data from the database.
         """
-        worker = Worker(self.do_build_menu)
-        worker.signals.result.connect(self.done_build_menu)
+        worker = Worker(self.do_query_menu_data)
+        worker.signals.result.connect(self.done_query_menu_data)
         self.threadpool.start(worker)
 
-    def do_build_menu(self):
+    def do_query_menu_data(self):
         """
         Synchronously fetch the menu data from the database.
         """
         with get_db_session() as session:
-            return MenuItemRepository.build_tree(session)
+            root_item = MenuItemRepository.fetch_root_item_data(session)
+            root_children = MenuItemRepository.fetch_root_children_data(session, root_item.id)
+            return root_item, root_children
 
-    def done_build_menu(self, tree):
+    def done_query_menu_data(self, result):
         """
         Process the fetched menu data and populate the FloatingMenu with items.
-        :param tree: The hierarchical menu tree fetched from the database.
         """
+        root_item_data, root_children_data = result
         self.clear_menu()
-        root_item = self.create_root_item()
+        root_item = self.create_root_item(root_item_data)
+        root_item.on_hold.connect(self.on_hold_handler)
         self.add_default_items(root_item)
-        self.populate_menu(tree, root_item)
+        self.populate_menu(root_children_data, root_item)
         self.set_root(root_item)
         self.draw_menu()
 
@@ -61,18 +62,25 @@ class DuckMenu(FloatingMenu):
         )
 
 
-    def create_root_item(self):
+    def on_hold_handler(self):
+        """
+        Handle the on-hold signal, which is emitted when the menu is held.
+        """
+        self.on_hold.emit()
+
+    def create_root_item(self, root_item_data):
         """
         Create and return the root FloatingMenuItem for the DuckMenu.
         """
         return FloatingMenuItem(
-            ":icons/rubber-duck.png",
+            root_item_data.icon or self.default_icon_path,
             QSize(64, 64),
             distance_to_center=100,
             start_angle=0,
             end_angle=360,
             root=None,
-            parent=self
+            parent=self,
+            data={"action": None, "tag": root_item_data}
         )
 
     def add_default_items(self, root_item):
@@ -136,3 +144,4 @@ class DuckMenu(FloatingMenu):
 
         for db_child_item in db_item.children:
             self.add_item_menu_recursive(db_child_item, child_item)
+

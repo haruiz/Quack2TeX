@@ -1,6 +1,6 @@
 [project]
 name = "quack2tex"
-version = "1.0.7"
+version = "1.0.8"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,10 +20,16 @@ dependencies = [
     "sqlalchemy>=2.0.36",
     "tenacity>=9.0.0",
     "typer>=0.12.5",
-    "pyqt6>=6.8.0",
-    "pyqt6-webengine>=6.8.0",
     "modihub",
-    "pyqt6-qt6>=6.8.1",
+    "sounddevice>=0.5.1",
+    "pydub>=0.25.1",
+    "google-cloud-texttospeech>=2.26.0",
+    "openai-whisper>=20240930",
+    "pyqtgraph>=0.13.7",
+    "markdown2>=2.5.3",
+    "bleach>=6.2.0",
+    "pyqt6>=6.9.0",
+    "pyqt6-webengine>=6.9.0",
 ]
 
 
@@ -31,9 +37,7 @@ dependencies = [
 quack2tex = "quack2tex.cli:run"
 
 [project.optional-dependencies]
-dev = [
-    "pyside6>=6.8.2.1",
-]
+dev = []
 
 [build-system]
 requires = ["hatchling"]

@@ -10,6 +10,8 @@ from quack2tex.pyqt import (
     QPropertyAnimation,
     QPoint,
     QEasingCurve,
+    Signal,
+    Qt
 )
 from quack2tex.widgets import ImageButton
 
@@ -18,8 +20,10 @@ class FloatingMenuItem(ImageButton):
     """
     A floating menu item that displays an icon and can have children items.
     """
+    on_hold = Signal()
 
-    def __init__(self, icon_path: str, icon_size: QSize, distance_to_center=100, start_angle=0, end_angle=360, root=None, parent=None, data=None):
+    def __init__(self, icon_path: str, icon_size: QSize, distance_to_center=100, start_angle=0, end_angle=360, root=None, parent=None, data=None, on_hold_timeout=1000):
+
         super().__init__(icon_path, icon_size, parent)
         self.distance_to_center = distance_to_center
         self.start_angle = start_angle
@@ -31,6 +35,11 @@ class FloatingMenuItem(ImageButton):
         self._expanded = False
         self._collapsed = True
 
+        self.hold_timer = QTimer(self)
+        self.hold_timer.setInterval(on_hold_timeout)  # 2000 ms = 2 seconds
+        self.hold_timer.setSingleShot(True)
+        self.hold_timer.timeout.connect(self.on_hold_handler)
+
     @property
     def data(self):
         return self.property("data")
@@ -38,6 +47,42 @@ class FloatingMenuItem(ImageButton):
     @data.setter
     def data(self, data):
         self.setProperty("data", data)
+
+    def mousePressEvent(self, event):
+        """
+        Triggered when the user presses the mouse button
+        :param e:
+        :return:
+        """
+        # Propagate the event to the parent window
+        if self.window() is not None:
+            self.window().mousePressEvent(event)
+
+        if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.NoModifier:
+            self.hold_timer.start()
+
+        super().mousePressEvent(event)
+
+
+    def mouseReleaseEvent(self, e):
+        """
+        Triggered when the user releases the mouse button
+        :param e:
+        :return:
+        """
+        # Propagate the event to the parent window
+        if self.window() is not None:
+            self.window().mouseReleaseEvent(e)
+        # Stop the hold timer if the mouse is released before 2 seconds
+        if self.hold_timer.isActive():
+            self.hold_timer.stop()
+        super().mouseReleaseEvent(e)
+
+    def on_hold_handler(self):
+        """
+        Function dispatched when the widget is held for the specified duration.
+        """
+        self.on_hold.emit()
 
 
     def addGlowEffect(self):
@@ -247,17 +292,6 @@ class FloatingMenuItem(ImageButton):
             sibling.move(x, y)
             sibling.setVisible(True)
             sibling.unfade()
-
-    def mousePressEvent(self, e):
-        """
-        Triggered when the user presses the mouse button
-        :param e:
-        :return:
-        """
-        # Propagate the event to the parent window
-        if self.window() is not None:
-            self.window().mousePressEvent(e)
-        super().mousePressEvent(e)
 
     def toggle(self):
         """

@@ -10,12 +10,15 @@ from quack2tex.pyqt import (
     Qt,
     QThreadPool,
     QMainWindow,
+    QMessageBox,
 )
-from quack2tex.utils import GuiUtils, Worker, work_exception
+from quack2tex.utils import GuiUtils, Worker, work_exception, LibUtils
 from quack2tex.widgets import DuckMenu
 from .ouput_dialog import OutputDialog
 from .screen_capture import ScreenCaptureWindow
-from .settings_window import SettingsWindow
+from quack2tex.windows.setting_window.settings_window import SettingsWindow
+from quack2tex.widgets import PromptDialog
+from ..widgets.audio_recorder import AudioRecorderDialog
 
 
 class MainWindow(QMainWindow):
@@ -33,6 +36,7 @@ class MainWindow(QMainWindow):
         self.menu = DuckMenu()
         self.menu.setFixedSize(400, 400)
         self.menu.build_menu()
+        self.menu.on_hold.connect(self.on_hold_handler)
         self.menu.item_clicked.connect(self.handle_menu_item_click)
         self.setCentralWidget(self.menu)
         self.threadpool = QThreadPool()
@@ -40,6 +44,13 @@ class MainWindow(QMainWindow):
         # drag and drop variables
         self.is_moving = False
         self.offset = None
+
+    def on_hold_handler(self):
+        """
+        Handle the on-hold event.
+        :return:
+        """
+        self.handle_menu_item_click(self.menu.root_item().data)
 
     def handle_menu_item_click(self, data):
         """
@@ -63,12 +74,68 @@ class MainWindow(QMainWindow):
                 "models": menu_item_data.models,
                 "capture_mode": capture_mode
             }
+
+            not_models_selected = menu_item_data.models is None or menu_item_data.models == ""
+            no_capture_mode = capture_mode is None or capture_mode == ""
+
+            if any([not_models_selected, no_capture_mode]):
+                return
+
             if capture_mode == "screen":
                 self.start_screen_capture(prompt_data)
             elif capture_mode == "clipboard":
                 self.start_clipboard_text_capture(prompt_data)
+            elif capture_mode == "text":
+                self.start_text_prompt_capture(prompt_data)
+            elif capture_mode == "voice":
+                self.start_voice_prompt_capture(prompt_data)
             else:
                 self.make_prompt_request(prompt_data, prompt_input="")
+
+
+    def start_text_prompt_capture(self, prompt_data):
+        """
+        Start the text prompt capture process
+        :param prompt_data:
+        :return:
+        """
+        dialog = PromptDialog(self)
+        dialog.setMinimumSize(400, 100)# set self as parent
+        # Position it bottom-centered relative to the main window
+        # parent_geometry = self.geometry()
+        # dialog_size = dialog.sizeHint()  # get dialog's preferred size
+        # x = parent_geometry.x() + (parent_geometry.width() - dialog_size.width()) // 2
+        # y = parent_geometry.y() + parent_geometry.height() - dialog_size.height() + 80  # 10px padding from bottom
+        # dialog.move(x, y)
+
+        if dialog.exec():  # If user clicks OK
+            prompt = dialog.get_prompt()
+            if prompt:
+                self.make_prompt_request(prompt_data, prompt_input=prompt)
+            else:
+                QMessageBox.warning(None, "Empty Prompt", "No prompt was captured.")
+
+    def start_voice_prompt_capture(self, prompt_data):
+        """
+        Start the voice prompt capture process
+        :param prompt_data:
+        :return:
+        """
+        lib_home_dir = LibUtils.get_lib_home()
+        recording_settings_file = lib_home_dir.joinpath("recording_settings.json")
+        recording_audio_file = lib_home_dir.joinpath("recording_audio.wav")
+
+        dialog = AudioRecorderDialog(
+            self,
+            recording_settings_file=str(recording_settings_file),
+            recording_audio_file=str(recording_audio_file)
+        )
+
+        if dialog.exec():  # If user clicks OK
+            transcribed_text = dialog.transcribed_text
+            if transcribed_text:
+                self.make_prompt_request(prompt_data, prompt_input=transcribed_text)
+
 
     def pick_screen_region(self):
         """
@@ -135,20 +202,24 @@ class MainWindow(QMainWindow):
         :param kwargs:
         :return:
         """
-        return self.process_prompt_request(prompt_data, prompt_input)
-
+        prompt_result = self.process_prompt_request(prompt_data, prompt_input)
+        return {
+            "prompt_data": prompt_data,
+            "prompt_input": prompt_input,
+            "prompt_result": prompt_result
+        }
     def make_prompt_request_done(self, result):
         """
         Handle the completion of the screen capture and description generation
         :param result:
         :return:
         """
-        predictions, error = result
+        prompt_info, error = result
         if error:
             GuiUtils.show_error(str(error))
             return
         self.menu.loading_indicator.close()
-        self.create_output_dialog(predictions)
+        self.create_output_dialog(prompt_info)
 
     def make_prompt_request(self, prompt_data: dict, prompt_input: typing.Union[str,PILImage]):
         """
@@ -164,13 +235,13 @@ class MainWindow(QMainWindow):
         worker.signals.result.connect(self.make_prompt_request_done)
         self.threadpool.start(worker)
 
-    def create_output_dialog(self, predictions: dict):
+    def create_output_dialog(self, prompt_info: dict):
         """
         Create an output window
         :param text:
         :return:
         """
-        dialog = OutputDialog(predictions, parent=self)
+        dialog = OutputDialog(prompt_info, parent=self)
         dialog.setWindowTitle("Output")
         dialog.adjustSize()
         GuiUtils.move_window_to_center(dialog)
@@ -225,7 +296,10 @@ class MainWindow(QMainWindow):
         :param event:
         :return:
         """
-        if event.button() == Qt.MouseButton.LeftButton:
+        if (
+                event.button() == Qt.MouseButton.LeftButton and
+                event.modifiers() & Qt.KeyboardModifier.ControlModifier
+        ):
             self.is_moving = True
             self.offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
 
@@ -235,7 +309,7 @@ class MainWindow(QMainWindow):
         :param event:
         :return:
         """
-        if self.is_moving:
+        if self.is_moving and event.buttons() & Qt.MouseButton.LeftButton:
             new_pos = event.globalPosition().toPoint() - self.offset
             self.move(new_pos)
 

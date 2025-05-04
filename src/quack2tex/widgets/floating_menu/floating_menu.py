@@ -1,4 +1,7 @@
 import weakref
+
+from PyQt6.QtCore import QTimer
+
 from quack2tex.pyqt import Signal, QWidget
 from .floating_menu_item import FloatingMenuItem
 
@@ -13,6 +16,7 @@ class FloatingMenu(QWidget):
         super().__init__(parent)
         self.setContentsMargins(0, 0, 0, 0)
         self.root_item = weakref.ref(root_item) if root_item else None  # Safely create weakref if root_item is not None
+
 
     def set_root(self, root_item: FloatingMenuItem):
         """
@@ -31,15 +35,15 @@ class FloatingMenu(QWidget):
         """
         try:
             if current_item := self.sender():
-                if current_item is not None:  # Check if the object is still valid
-                    current_item.toggle()
-                    data = current_item.data
-                    if data:
+                current_item.toggle()
+                data = current_item.data
+                if data:
+                    self.toggle_item(current_item)
+                    if current_item != self.root_item():
                         self.item_clicked.emit(data)
-                        self.toggle_item(current_item)
 
-                    if current_item == self.root_item() and self.root_item() and self.root_item().is_expanded():
-                        self.root_item().toggle()
+                if current_item == self.root_item() and self.root_item() and self.root_item().is_expanded():
+                    self.root_item().toggle()
         except Exception as e:
             print(e)
 
@@ -88,6 +92,6 @@ class FloatingMenu(QWidget):
                 if self.root_item().children:
                     self.draw_item_children(self.root_item(), center)
             else:
-                print("Root item is not set.")
+                raise Exception("Root item not set or invalid.")
         except Exception as e:
             print(e)

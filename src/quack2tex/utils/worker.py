@@ -1,76 +1,69 @@
 import sys
 import traceback
-
 from quack2tex.pyqt import Signal, Slot, QObject, QRunnable
+from typing import Callable,  Any
 
 
 class WorkerSignals(QObject):
     """
     Defines the signals available from a running worker thread.
+    These signals are emitted for communication with the main thread:
 
-    Supported signals are:
-
-    finished
-        No data
-
-    error
-        `tuple` (exctype, value, traceback.format_exc() )
-
-    result
-        `object` data returned from processing, anything
-
-    progress
-        `int` indicating % progress
-
+    - finished: Emitted when the worker finishes processing (no data).
+    - error: Emitted when an exception occurs, with a tuple (exctype, value, traceback).
+    - result: Emitted with the result of the processing (can be any object).
+    - progress: Emitted with progress updates (usually an integer percentage).
     """
-
     finished = Signal()
     error = Signal(tuple)
     result = Signal(object)
-    progress = Signal(int)
+    progress = Signal(object)
 
 
 class Worker(QRunnable):
     """
-    Worker thread
+    A worker thread that runs a given function asynchronously.
 
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
+    :param fn: The function to be executed in the worker thread.
+    :param args: Arguments to pass to the callback function.
+    :param kwargs: Keyword arguments to pass to the callback function.
     """
 
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
+    def __init__(self, fn: Callable, *args: Any, **kwargs: Any):
+        super().__init__()
 
-        # Store constructor arguments (re-used for processing)
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
-        # Add the callback to our kwargs
-        if "progress_callback" in self.kwargs:
+        # Set the progress callback if provided in kwargs
+        progress_callback = kwargs.pop("progress_callback", None)
+        if progress_callback:
             self.kwargs["progress_callback"] = self.signals.progress
 
     @Slot()
-    def run(self):
+    def run(self) -> None:
         """
-        Initialise the runner function with passed args, kwargs.
+        Runs the provided function with the given arguments and handles exceptions.
+        Emits signals for progress, result, or error as appropriate.
         """
-
-        # Retrieve args/kwargs here; and fire processing using them
         try:
-            result = self.fn(*self.args, **self.kwargs)
-        except:
+            # Execute the function with arguments and handle progress callback
+            if "progress_callback" in self.kwargs:
+                progress_callback = self.kwargs.pop("progress_callback")
+                result = self.fn(progress_callback, *self.args, **self.kwargs)
+            else:
+                result = self.fn(*self.args, **self.kwargs)
+
+        except Exception:
+            # Print traceback and emit error signal with exception details
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
-            self.signals.result.emit(result)  # Return the result of the processing
+            # Emit the result signal with the function's result
+            self.signals.result.emit(result)
         finally:
-            self.signals.finished.emit()  # Done
+            # Emit finished signal to signal completion
+            self.signals.finished.emit()
