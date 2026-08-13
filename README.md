@@ -1,14 +1,10 @@
 # Quack2Tex 🦆
 
-Ever found yourself battling with equations while writing papers in LaTeX, wishing there was a way to just snap a picture and boom—LaTeX code? Well, I did too. After too many late nights and too much coffee, I finally decided to do something about it. The result? Quack2Tex.
+Ever found yourself switching between screenshots, notes, prompts, and model chats just to turn a quick idea into something useful? **Quack2Tex** started as a fast way to capture equations and convert them into LaTeX, and has grown into a small desktop assistant for multimodal work.
 
-**Quack2Tex** is a handy tool that facilitates turning images of math equations and charts into LaTeX code, quickly and easily!. But it doesn't stop there! It also has cool features like guessing the location from a photo, identifying recipes from food pictures, and explaining code from images. Rendered as a floating menu on your screen, Quack2Tex is always at your fingertips, making it easy to access anytime you need it.
+Quack2Tex lives as a customizable floating duck menu on your screen. It can work with screenshots, images, clipboard text, typed prompts, uploaded files, and voice input to run reusable AI actions such as image-to-LaTeX, chart interpretation, code explanation, location guessing, recipe identification, and custom prompts. It also keeps useful outputs in local history, stores provider credentials securely in your OS keychain, persists app preferences in a local database, supports configurable duck themes and quick actions, and includes a Pomodoro timer for focused writing or study sessions. With macOS and Windows packaging support, Quack2Tex is designed to feel like a lightweight desktop tool you can keep nearby while working.
 
 ## 🚀 Features
-
-Certainly! Here's the revised version without emoticons:
-
----
 
 - **2026-08-12** – Quack2Tex adds secure preferences, Pomodoro, and installer packaging! 🎉
 
