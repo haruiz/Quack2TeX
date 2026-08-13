@@ -10,6 +10,16 @@ Certainly! Here's the revised version without emoticons:
 
 ---
 
+- **2026-08-12** – Quack2Tex adds secure preferences, Pomodoro, and installer packaging! 🎉
+
+  This update expands Quack2Tex with desktop-app polish, safer configuration, and release tooling:
+  * **Secure Credential Storage**: Provider API keys are now stored through the operating system keychain using `keyring`.
+  * **Database-Backed Preferences**: Themes, presets, Pomodoro settings, duck images, and app preferences now persist in the local database.
+  * **Pomodoro Timer**: A configurable Pomodoro action is available from the floating menu, with adjustable durations and audio-gated phase transitions.
+  * **Duck Gallery and UI Polish**: The floating menu, duck assets, loading states, settings panels, and output dialogs received visual and interaction updates.
+  * **ModiHub Submodule Setup**: ModiHub is now managed as a `deps/modihub` submodule with matching source and development documentation updates.
+  * **Installer Packaging**: PyInstaller, macOS DMG, Windows Inno Setup, Makefile targets, and GitHub Actions packaging workflow were added.
+
 - **2025-05-01** – Quack2Tex v1.0.9 is out! 🎉  
 
   This update introduces several powerful new features and improvements:
