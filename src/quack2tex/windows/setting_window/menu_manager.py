@@ -7,9 +7,10 @@ from PIL import Image
 from PIL import Image as PILImage
 
 from quack2tex import GuiUtils
+from quack2tex.preferences import Preferences
 from quack2tex.pyqt import (
     QModelIndex, QThreadPool, QSize, Signal, QIcon, QStandardItem, QPushButton, QToolBar,
-    QTreeView,
+    QTreeView, QMenu, Qt,
     QVBoxLayout, QFrame, QDialog
 )
 from quack2tex.repository import MenuItemRepository
@@ -24,39 +25,58 @@ class MenuManager(QFrame):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+        self.setObjectName("menuManager")
 
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(18, 18, 18, 18)
+        self.layout.setSpacing(14)
         self.setLayout(self.layout)
 
         self.toolbar = QToolBar()
+        self.toolbar.setObjectName("settingsToolbar")
+        self.toolbar.setMovable(False)
+        self.toolbar.setIconSize(QSize(22, 22))
         self.treeview = QTreeView()
+        self.treeview.setObjectName("settingsTreeView")
+        self.treeview.setAlternatingRowColors(True)
+        self.treeview.setIconSize(QSize(28, 28))
+        self.treeview.setIndentation(28)
+        self.treeview.setUniformRowHeights(True)
+        self.treeview.setAnimated(True)
+        self.treeview.header().setStretchLastSection(True)
+        self.treeview.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.treeview.customContextMenuRequested.connect(self.open_context_menu)
 
         self.layout.addWidget(self.toolbar)
         self.layout.addWidget(self.treeview)
 
         self.btn_check_all = QPushButton()
+        self.btn_check_all.setFixedSize(40, 40)
         self.btn_check_all.setIcon(QIcon(":/icons/check-all.png"))
-        self.btn_check_all.setIconSize(QSize(16, 16))
+        self.btn_check_all.setIconSize(QSize(22, 22))
         self.btn_check_all.clicked.connect(self.check_all_items)
         self.btn_check_all.setToolTip("Check all items")
         self.toolbar.addWidget(self.btn_check_all)
 
         self.btn_uncheck_all = QPushButton()
+        self.btn_uncheck_all.setFixedSize(40, 40)
         self.btn_uncheck_all.setIcon(QIcon(":/icons/uncheck-all.png"))
-        self.btn_uncheck_all.setIconSize(QSize(16, 16))
+        self.btn_uncheck_all.setIconSize(QSize(22, 22))
         self.btn_uncheck_all.clicked.connect(self.uncheck_all_items)
         self.btn_uncheck_all.setToolTip("Uncheck all items")
         self.toolbar.addWidget(self.btn_uncheck_all)
 
         self.btn_refresh = QPushButton()
+        self.btn_refresh.setFixedSize(40, 40)
         self.btn_refresh.setIcon(QIcon(":/icons/refresh.png"))
-        self.btn_refresh.setIconSize(QSize(16, 16))
+        self.btn_refresh.setIconSize(QSize(22, 22))
         self.btn_refresh.clicked.connect(self.populate_treeview)
         self.btn_refresh.setToolTip("Refresh items")
         self.toolbar.addWidget(self.btn_refresh)
 
         self.btn_clear_selection = QPushButton()
-        self.btn_clear_selection.setIconSize(QSize(16, 16))
+        self.btn_clear_selection.setFixedSize(40, 40)
+        self.btn_clear_selection.setIconSize(QSize(22, 22))
         self.btn_clear_selection.setIcon(QIcon(":/icons/broom.png"))
         self.btn_clear_selection.setToolTip("Clear items selection")
         self.btn_clear_selection.clicked.connect(self.treeview.clearSelection)
@@ -65,22 +85,25 @@ class MenuManager(QFrame):
         self.toolbar.addSeparator()
 
         self.btn_add = QPushButton()
+        self.btn_add.setFixedSize(40, 40)
         self.btn_add.setIcon(QIcon(":/icons/add.png"))
-        self.btn_add.setIconSize(QSize(16, 16))
+        self.btn_add.setIconSize(QSize(22, 22))
         self.btn_add.setToolTip("Add new item")
         self.btn_add.clicked.connect(self.add_new_item)
         self.toolbar.addWidget(self.btn_add)
 
         self.btn_edit = QPushButton()
+        self.btn_edit.setFixedSize(40, 40)
         self.btn_edit.setIcon(QIcon(":/icons/edit.png"))
-        self.btn_edit.setIconSize(QSize(16, 16))
+        self.btn_edit.setIconSize(QSize(22, 22))
         self.btn_edit.clicked.connect(self.edit_selected_item)
         self.btn_edit.setToolTip("Edit selected item")
         self.toolbar.addWidget(self.btn_edit)
 
         self.btn_delete = QPushButton()
+        self.btn_delete.setFixedSize(40, 40)
         self.btn_delete.setIcon(QIcon(":/icons/delete.png"))
-        self.btn_delete.setIconSize(QSize(16, 16))
+        self.btn_delete.setIconSize(QSize(22, 22))
         self.btn_delete.clicked.connect(self.delete_selected_items)
         self.btn_delete.setToolTip("Delete checked items")
         self.toolbar.addWidget(self.btn_delete)
@@ -88,7 +111,31 @@ class MenuManager(QFrame):
         self.thread_pool = QThreadPool()
         model = TreeViewStandardItemModel(["Name"])
         self.treeview.setModel(model)
+        self.treeview.setSelectionBehavior(QTreeView.SelectionBehavior.SelectRows)
+        self.treeview.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
         self.populate_treeview()
+
+    def open_context_menu(self, position) -> None:
+        index = self.treeview.indexAt(position)
+        if not index.isValid():
+            return
+        model = self.treeview.model()
+        tree_item = model.itemFromIndex(index)
+        tree_item_data: MenuItem = tree_item.tag
+        if tree_item_data.is_root:
+            return
+
+        menu = QMenu(self)
+        is_favorite = Preferences.is_favorite(tree_item_data.id)
+        favorite_action = menu.addAction("Remove from Favorites" if is_favorite else "Add to Favorites")
+        edit_action = menu.addAction("Edit")
+        action = menu.exec(self.treeview.viewport().mapToGlobal(position))
+        if action == favorite_action:
+            Preferences.toggle_favorite(tree_item_data.id)
+            self.on_menu_options_changed.emit()
+        elif action == edit_action:
+            self.treeview.setCurrentIndex(index)
+            self.edit_selected_item()
 
     def check_all_items(self) -> None:
         """
@@ -252,7 +299,6 @@ class MenuManager(QFrame):
         parent_item = model.itemFromIndex(selected_index)
 
         new_item_form = MenuItemForm()
-        new_item_form.setFixedSize(600, 500)
         dialog_result = new_item_form.exec()
         if dialog_result == QDialog.DialogCode.Accepted:
             new_item = MenuItem(
@@ -294,6 +340,7 @@ class MenuManager(QFrame):
         for tree_item_data in result:
             treeview_item = QStandardItem(tree_item_data.name)
             treeview_item.setCheckable(True)
+            treeview_item.setSizeHint(QSize(0, 44))
             treeview_item_icon = QIcon(":/icons/gears.png")
             if tree_item_data.icon:
                 treeview_item_icon = QIcon(tree_item_data.icon)
@@ -315,6 +362,7 @@ class MenuManager(QFrame):
         for child_item_data in tree_item_data.children:
             child_item = QStandardItem(child_item_data.name)
             child_item.setCheckable(True)
+            child_item.setSizeHint(QSize(0, 44))
 
             treeview_item_icon = QIcon(":/icons/gears.png")
             if child_item_data.icon:

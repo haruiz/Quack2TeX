@@ -17,6 +17,7 @@ class AudioRecorder(QThread):
     data_ready = Signal(np.ndarray)
     recording_started = Signal()
     recording_stopped = Signal()
+    recording_error = Signal(str)
 
     def __init__(self, audio_device_info: dict, channels: int =1, sample_width: int =2, audio_chunk_size: int =512):
         super().__init__()
@@ -50,7 +51,10 @@ class AudioRecorder(QThread):
             ):
                 while self.is_recording:
                     sd.sleep(100)
+        except Exception as error:
+            self.recording_error.emit(str(error))
         finally:
+            self.is_recording = False
             self.recording_stopped.emit()
 
     def audio_callback(self, indata, frames, time, status):
@@ -80,6 +84,9 @@ class AudioRecorder(QThread):
         :param output_file: The output file path
         :return:
         """
+        if not self.audio_data_buffer:
+            raise RuntimeError("No audio was recorded. Check the selected microphone and try again.")
+
         with wave.open(output_file, "wb") as wf:
             wf.setnchannels(self.channels)  # Mono audio
             wf.setsampwidth(self.sample_width)  # Sample width in bytes (int16 = 2 bytes)
@@ -87,4 +94,3 @@ class AudioRecorder(QThread):
             int_data = np.concatenate(self.audio_data_buffer)[:, 0]
             int_data = np.int16(int_data * 32767)  # Scale float32 to int16 range
             wf.writeframes(int_data.tobytes())
-

@@ -16,8 +16,14 @@ class LoadingIndicator(QWidget):
         super().__init__(parent)
 
         self.setWindowTitle("Loading Indicator")
-        # self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Window
+            | Qt.WindowType.WindowDoesNotAcceptFocus
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
         resource = QResource(gif_path)
         image_data = resource.data()
@@ -61,6 +67,13 @@ class LoadingIndicator(QWidget):
         """
         self.start()
         super().showEvent(e)
+
+    def hideEvent(self, e):
+        """
+        Stop the animation when the overlay is hidden.
+        """
+        self.stop()
+        super().hideEvent(e)
 
     def keyPressEvent(self, event):
         """

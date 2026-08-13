@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import Any, TYPE_CHECKING, List
 from datetime import datetime, timezone
-from sqlalchemy import ForeignKey, event, LargeBinary, Text, func, DateTime
+from sqlalchemy import ForeignKey, event, LargeBinary, Text, func, DateTime, UniqueConstraint
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -73,6 +74,7 @@ class Prompt(Base):
     guidance_prompt: Mapped[str] = mapped_column(Text, nullable=True)
     prompt_input: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     capture_mode: Mapped[str] = mapped_column(nullable=False)
+    title: Mapped[str] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default_factory=lambda: datetime.now(tz=timezone.utc),  # Python-side default for dataclass
@@ -94,6 +96,14 @@ class Response(Base):
     Represents the output of a model associated with a prompt.
     """
     __tablename__ = "response"
+    __table_args__ = (
+        UniqueConstraint(
+            "prompt_id",
+            "model",
+            "output",
+            name="uq_response_prompt_model_output",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True, autoincrement=True)
     prompt_id: Mapped[int] = mapped_column(ForeignKey("prompt.id"), nullable=False)
@@ -104,6 +114,25 @@ class Response(Base):
         prompt: Prompt
     else:
         prompt = relationship("Prompt", back_populates="responses")
+
+
+class AppPreference(Base):
+    """
+    Key/value application preference stored in the local SQLite database.
+    """
+    __tablename__ = "preferences"
+
+    key: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default_factory=lambda: datetime.now(tz=timezone.utc),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    def decoded_value(self) -> Any:
+        return json.loads(self.value)
 
 
 
@@ -136,4 +165,3 @@ def after_menuitem_created(target, connection, **kw):
                 "is_root": True
         }]
     )
-

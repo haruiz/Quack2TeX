@@ -15,6 +15,8 @@ Certainly! Here's the revised version without emoticons:
   This update introduces several powerful new features and improvements:
   * **Voice Input Support**: You can now interact with Quack2Tex using voice, in addition to screen, clipboard, and text input.
   * **Database Persistence**: Prompts and responses now can be saved to a local database for future reference.
+  * **Generated History Titles**: Saved model outputs are summarized into concise history titles so recent items are easier to scan.
+  * **Grouped Settings**: Preferences are organized into General, Voice, Providers, Duck, and Presets sections. Preset save/reset actions are shown only on the Presets section.
   * **Quick Action**: Hold the mouse button on the rubber duck icon to quickly trigger actions. These can be customized from the **Settings** menu.
   > **Important:**
   > This release includes a major update to the database schema.
@@ -56,9 +58,67 @@ To get started with Quack2Tex, follow these steps:
 pip install quack2tex
 ```
 
+### Install from Source
+
+For local development, clone the repository with its `modihub` submodule:
+
+```bash
+git clone --recurse-submodules git@github.com:haruiz/Quack2TeX.git
+cd Quack2TeX
+uv sync
+uv run quack2tex
+```
+
+If you already cloned the repository without submodules, initialize them before
+running `uv sync`:
+
+```bash
+git submodule update --init --recursive
+uv sync
+```
+
+Quack2Tex keeps `modihub` in `deps/modihub` so the app can use ModiHub's
+provider-backed model discovery while keeping the dependency source inside this
+repository checkout. The local source is configured in `pyproject.toml`:
+
+```toml
+[tool.uv.sources]
+modihub = { path = "deps/modihub", editable = true }
+```
+
 ## 📚 Usage
 
 You can run **Quack2Tex** in multiple ways depending on your preference.
+
+### 🔐 Recommended: Save API Keys in Settings
+
+Open **Settings > Preferences > Providers** and save your provider API keys.
+Quack2Tex stores these keys in your operating
+system's secure credential store, such as macOS Keychain, Windows Credential
+Manager, or the Linux Secret Service/KWallet backend when available.
+
+Environment variables still take precedence, so command-line keys and exported
+variables can override stored settings for a single session.
+
+Quack2Tex stores non-secret preferences in `~/.quack2tex/quack2tex.db`.
+
+### ⚙️ Settings Layout
+
+The Settings dialog is modal. The floating duck menu is hidden while Settings is
+open and restored when the dialog closes.
+
+Top-level Settings sections:
+
+- **Menu Manager**: Create and organize custom duck-menu actions.
+- **Prompts Browser**: Review saved prompts and model responses. Saved prompts
+  display generated titles based on model output when available.
+- **Preferences**: Configure app preferences in grouped tabs:
+  - **General**: Theme and Pomodoro timing.
+  - **Voice**: FFmpeg path for voice transcription.
+  - **Providers**: API keys.
+  - **Duck**: Main duck image.
+  - **Presets**: Quick preset definitions. The Save Preset and Reset Presets
+    buttons appear in a footer only when this tab is active.
 
 ### 🏁 Quick Start (via terminal)
 
@@ -86,13 +146,10 @@ quack2tex
 
 ### 📄 `.env` File Support
 
-You can also create a `.env` file in the root directory with the following contents:
+You can also copy `.env.example` to `.env` and fill in only the keys you need:
 
-```env
-GEMINI_API_KEY=<your_gemini_api_key>
-OPENAI_API_KEY=<your_openai_api_key>
-ANTHROPIC_API_KEY=<your_anthropic_api_key>
-GROQ_API_KEY=<your_groq_api_key>
+```bash
+cp .env.example .env
 ```
 
 The app will automatically load these variables using `python-dotenv`.
@@ -108,6 +165,37 @@ quack2tex --help
 ### 🧠 Optional: Using LLava Models via Ollama
 
 Quack2Tex also supports LLava models via the [Ollama API](https://ollama.com). Be sure to have Ollama running and properly configured.
+
+### 🎙️ Voice Input Requirements
+
+Voice input uses OpenAI Whisper locally. Whisper requires the `ffmpeg` command to
+be available.
+
+On macOS, install it with Homebrew:
+
+```bash
+brew install ffmpeg
+```
+
+Quack2Tex auto-detects common `ffmpeg` locations such as
+`/opt/homebrew/bin/ffmpeg` and `/usr/local/bin/ffmpeg`. If auto-detection picks
+the wrong command, open **Settings > Preferences > Voice** and set **FFmpeg
+Path** explicitly. Leave the field blank to return to auto-detect.
+
+The warning `FP16 is not supported on CPU; using FP32 instead` is expected on
+CPU-only machines and does not prevent transcription.
+
+### 🕘 History
+
+Use the save button in the output viewer to store model output in the local
+database. Quack2Tex asks the selected model to create a short title from the
+saved output and stores that title with the prompt. If title generation fails,
+the app falls back to a local title based on the output text and still saves the
+history item.
+
+In **Settings > Prompts Browser**, prompt-level items use the generated title.
+Response-level items show the model name. You can delete either an entire prompt
+history item or a single model response from the context menu.
 
 ### 🐍 Running from Python
 
@@ -137,10 +225,23 @@ Let me know if you'd like to include examples, expected outputs, or Docker suppo
 Want to help make Quack2Tex better? Feel free to contribute by following these steps:
 
 1. Fork the repo.
-2. Create a new branch.
-3. Make your changes.
-4. Commit and push your changes.
-5. Open a Pull Request.
+2. Clone your fork with submodules: `git clone --recurse-submodules <your-fork-url>`.
+3. Create a new branch.
+4. Run `uv sync`.
+5. Make your changes.
+6. Commit and push your changes.
+7. Open a Pull Request.
+
+See [docs/development.md](docs/development.md) for local setup and submodule
+maintenance notes.
+
+Installer packaging notes live in [docs/packaging.md](docs/packaging.md).
+
+Before opening a pull request, run:
+
+```bash
+make check
+```
 
 ## 🛠️ Troubleshooting
 

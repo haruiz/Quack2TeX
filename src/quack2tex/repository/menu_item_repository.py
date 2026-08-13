@@ -56,6 +56,17 @@ class MenuItemRepository:
         return menu_items
 
     @classmethod
+    def fetch_items_by_ids(cls, session: Session, item_ids: List[int]) -> List[MenuItem]:
+        """
+        Fetch menu items matching the supplied IDs.
+        """
+        if not item_ids:
+            return []
+        items = session.query(MenuItem).filter(MenuItem.id.in_(item_ids)).all()
+        by_id = {item.id: item for item in items}
+        return [by_id[item_id] for item_id in item_ids if item_id in by_id]
+
+    @classmethod
     def fetch_tree_data(cls, session: Session) -> List[MenuItem]:
         """
         Constructs a tree structure of menu items with parent-child relationships.

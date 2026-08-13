@@ -1,7 +1,7 @@
 [project]
 name = "quack2tex"
 version = "1.0.9"
-description = "Add your description here"
+description = "Desktop assistant for multimodal prompt actions, voice input, and LaTeX-oriented model workflows"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -24,6 +24,7 @@ dependencies = [
     "sounddevice>=0.5.1",
     "pydub>=0.25.1",
     "google-cloud-texttospeech>=2.26.0",
+    "keyring>=25.6.0",
     "openai-whisper>=20240930",
     "pyqtgraph>=0.13.7",
     "markdown2>=2.5.3",
@@ -44,7 +45,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-modihub = { path = "../modihub" , editable = true }
+modihub = { path = "deps/modihub", editable = true }
 
 
 [tool.hatch.build]

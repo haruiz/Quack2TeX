@@ -19,7 +19,9 @@
     <file>icons/save.png</file>
     <file>icons/refresh.png</file>
     <file>icons/close.png</file>
+    <file>icons/pomodoro-technique.png</file>
     <file>icons/loading.gif</file>
+    <file>sounds/06-end-duck-round.mp3</file>
     <file>styles/style.qss</file>
     <file>fonts/Roboto/Roboto-Medium.ttf</file>
     <file>fonts/Roboto/Roboto-Light.ttf</file>

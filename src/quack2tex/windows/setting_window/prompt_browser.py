@@ -11,7 +11,7 @@ from quack2tex.pyqt import (
     QLabel,
 QCursor,
     QIcon,
-    Qt, QImage, QPixmap, QGraphicsView,
+    Qt, QSize, QImage, QPixmap, QGraphicsView,
     QGraphicsPixmapItem, QPainter, QWheelEvent, QGraphicsScene, QMessageBox,QMenu,QApplication
 )
 from quack2tex.repository import PromptRepository
@@ -124,14 +124,23 @@ class PromptDetailsDialog(QDialog):
 class PromptBrowser(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("promptBrowser")
         # Layout
         self.main_layout = QHBoxLayout(self)
+        self.main_layout.setContentsMargins(18, 18, 18, 18)
+        self.main_layout.setSpacing(14)
 
         # Right: Toolbox for model outputs
         self.prompt_tree = HoverableTreeView()
+        self.prompt_tree.setObjectName("settingsPromptTree")
         self.prompt_tree.doubleClicked.connect(self.on_tree_item_clicked)
         self.prompt_tree.setHeaderHidden(True)
         self.prompt_tree.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prompt_tree.setAlternatingRowColors(True)
+        self.prompt_tree.setAnimated(True)
+        self.prompt_tree.setIconSize(QSize(28, 28))
+        self.prompt_tree.setIndentation(28)
+        self.prompt_tree.setUniformRowHeights(True)
         self.prompt_tree.clicked.connect(self.on_tree_item_clicked)
         self.prompt_model = QStandardItemModel()
         self.prompt_model.setHorizontalHeaderLabels(["Prompt & Responses"])
@@ -192,12 +201,19 @@ class PromptBrowser(QWidget):
         :return:
         """
         for prompt in prompts:
-            prompt_item = QStandardItem(prompt.guidance_prompt or prompt.system_instruction)
+            prompt_item = QStandardItem(
+                prompt.title
+                or prompt.guidance_prompt
+                or prompt.system_instruction
+                or "Saved Model Output"
+            )
+            prompt_item.setSizeHint(QSize(0, 44))
             prompt_item.setEditable(False)
             prompt_item.setSelectable(False)
             prompt_item.setData(prompt, Qt.ItemDataRole.UserRole)
             for response in prompt.responses:  # Access responses directly!
                 response_item = QStandardItem(response.model)
+                response_item.setSizeHint(QSize(0, 44))
                 response_item.setEditable(False)
                 response_item.setData(response, Qt.ItemDataRole.UserRole)
                 prompt_item.appendRow(response_item)
@@ -281,6 +297,4 @@ class PromptBrowser(QWidget):
                 self.delete_selected_item()
             elif action == view_prompt_action:
                 self.view_prompt_input()
-
-
 

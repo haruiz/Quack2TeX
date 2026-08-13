@@ -3,7 +3,8 @@ from jinja2 import Template
 from modihub.llm import LLM
 
 from quack2tex.pyqt import (
-    QVBoxLayout,
+    QMimeData,
+    QHBoxLayout,
     QTextEdit,
     QWidget,
     QMenu,
@@ -16,7 +17,7 @@ from quack2tex.pyqt import (
     Property
 )
 from quack2tex.resources import *  # noqa
-from quack2tex.utils import Worker
+from quack2tex.utils import Worker, run_async
 from string import Template
 
 default_prompt_template = Template("""
@@ -36,6 +37,19 @@ Enhanced Prompt:
 Return it in plain text format without any additional explanation.
 """)
 
+
+class PlainPromptTextEdit(QTextEdit):
+    """Text editor that keeps prompt content plain when users paste rich text."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptRichText(False)
+
+    def insertFromMimeData(self, source: QMimeData) -> None:
+        """Insert only plain clipboard text, dropping fonts, colors, and HTML."""
+        self.insertPlainText(source.text())
+
+
 class PromptInput(QWidget):
     def __init__(self, prompt_template: Template = default_prompt_template, parent=None):
         super().__init__(parent)
@@ -44,10 +58,11 @@ class PromptInput(QWidget):
         self.prompt_template = prompt_template
 
         # Multiline text input
-        self.text_edit = QTextEdit(self)
+        self.text_edit = PlainPromptTextEdit(self)
         self.text_edit.setPlaceholderText("Enter your prompt here...")
 
         self.btn_enhance_prompt = QPushButton()
+        self.btn_enhance_prompt.setObjectName("enhancePromptButton")
         self.btn_enhance_prompt.setEnabled(False)
         self.btn_enhance_prompt.setToolTip("Enhance Prompt")
         self.btn_enhance_prompt.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -58,10 +73,11 @@ class PromptInput(QWidget):
         self.model_picker: QMenu = QMenu()
         self.model_picker.triggered.connect(lambda action: self.enhance_prompt(action.text()))
         # Layout
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
         layout.addWidget(self.text_edit)
-        layout.addWidget(self.btn_enhance_prompt, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.btn_enhance_prompt, alignment=Qt.AlignmentFlag.AlignBottom)
         self.setLayout(layout)
 
         self.threadpool = QThreadPool()
@@ -80,7 +96,7 @@ class PromptInput(QWidget):
 
 
     def do_load_models(self):
-        return list(LLM.available_models().group_by("client"))
+        return list(run_async(LLM.available_models()).group_by("client"))
 
     def done_load_models(self, available_models):
         """
@@ -120,8 +136,8 @@ class PromptInput(QWidget):
         :return:
         """
         system_instruction = self.prompt_template.safe_substitute(prompt=prompt)
-        llm = LLM.create(model_name, system_instruction=system_instruction)
-        return llm(prompt)
+        llm = run_async(LLM.create(model_name, system_instruction=system_instruction))
+        return run_async(llm(prompt))
 
     def done_enhance_prompt(self, enhanced_prompt: str):
         """

@@ -2,12 +2,12 @@ from typing import Any
 
 from quack2tex import LLM
 from quack2tex.enums import CaptureMode
-from quack2tex.utils import GuiUtils, Worker, work_exception
+from quack2tex.utils import GuiUtils, Worker, work_exception, run_async
 from quack2tex.widgets import FileUploader, ModelPicker, PromptInput
 from quack2tex.pyqt import (
     QDialog, QVBoxLayout, QFormLayout, QTextEdit, QSizePolicy,
     QDialogButtonBox, QComboBox, Qt, QObject, Signal, QLabel,
-    QThreadPool, Property
+    QThreadPool, Property, QScrollArea, QWidget
 )
 
 
@@ -49,12 +49,16 @@ class MenuItemForm(QDialog, QObject):
 
     def __init__(self, initial_values=None, parent=None):
         super().__init__(parent)
+        self.setObjectName("menuItemForm")
         self.setWindowTitle("Edit Menu Item")
         self.setModal(True)
-        self.setFixedSize(800, 600)
+        self.setWindowFlag(Qt.WindowType.Window)
+        self.setMinimumSize(1120, 760)
 
         self.thread_pool = QThreadPool()
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(14)
 
         self.loading_label = QLabel("Loading data...")
         self.loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -88,7 +92,7 @@ class MenuItemForm(QDialog, QObject):
     def load_form(self) -> None:
         @work_exception
         def do_work() -> dict[str, Any]:
-            return {"models": LLM.available_models()}
+            return {"models": run_async(LLM.available_models())}
 
         def done(result):
             data, error = result
@@ -102,18 +106,26 @@ class MenuItemForm(QDialog, QObject):
         self.thread_pool.start(worker)
 
     def on_widget_loaded_handler(self, form_data: dict) -> None:
+        self.loading_label.hide()
         self.build_form(form_data)
         if self.initial_values:
             self.form_values = self.initial_values
 
 
     def build_form(self, form_data: dict) -> None:
+        form_container = QWidget(self)
+        form_container.setObjectName("menuItemFormContent")
         form_layout = QFormLayout()
+        form_container.setLayout(form_layout)
+        form_layout.setContentsMargins(0, 0, 0, 0)
+        form_layout.setHorizontalSpacing(18)
+        form_layout.setVerticalSpacing(22)
         form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.DontWrapRows)
         form_layout.setFormAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
 
-        self.txt_name = self._create_text_edit("txt_name", "Enter menu item name...", height=30)
+        self.txt_name = self._create_text_edit("txt_name", "Enter menu item name...", height=44)
         form_layout.addRow("Name:", self.txt_name)
 
         self.file_icon_uploader = FileUploader(self, file_filter="Images (*.png *.jpg *.jpeg)")
@@ -122,31 +134,62 @@ class MenuItemForm(QDialog, QObject):
         self._set_expandable(self.file_icon_uploader)
         form_layout.addRow("Icon:", self.file_icon_uploader)
 
-        self.txt_system_instructions = self._create_prompt_edit("txt_system_instructions", "Enter system instructions...")
-        form_layout.addRow("System Instruction:", self.txt_system_instructions)
+        system_tooltip = (
+            "System Prompt defines the assistant's role, tone, and rules. "
+            "It stays stable across inputs for this menu action."
+        )
+        self.txt_system_instructions = self._create_prompt_edit(
+            "txt_system_instructions",
+            "Enter system instructions...",
+            system_tooltip,
+        )
+        form_layout.addRow(
+            self._create_label("System Prompt:", system_tooltip),
+            self.txt_system_instructions,
+        )
 
-        self.txt_guidance_prompt = self._create_prompt_edit("txt_guidance_prompt", "Enter guidance prompt...")
-        form_layout.addRow("Guidance Prompt:", self.txt_guidance_prompt)
+        guidance_tooltip = (
+            "Guidance Prompt is the task instruction applied to the captured input, "
+            "such as what to rewrite, summarize, extract, or convert."
+        )
+        self.txt_guidance_prompt = self._create_prompt_edit(
+            "txt_guidance_prompt",
+            "Enter guidance prompt...",
+            guidance_tooltip,
+        )
+        form_layout.addRow(
+            self._create_label("Guidance Prompt:", guidance_tooltip),
+            self.txt_guidance_prompt,
+        )
 
         self.list_model_picker = ModelPicker(self)
         self.list_model_picker.setObjectName("list_model_picker")
         self.list_model_picker.set_data(form_data["models"])
-        self._set_expandable(self.list_model_picker)
+        self.list_model_picker.setFixedHeight(216)
+        self._set_expandable(self.list_model_picker, vertical=False)
         form_layout.addRow("Select Models:", self.list_model_picker)
 
         self.cbx_capture_mode = CaptureModeComboBox(self)
-        self.cbx_capture_mode.setFixedHeight(30)
+        self.cbx_capture_mode.setFixedHeight(42)
         self.cbx_capture_mode.setObjectName("cbx_capture_mode")
         self._set_expandable(self.cbx_capture_mode)
         form_layout.addRow("Capture Mode:", self.cbx_capture_mode)
 
+        scroll_area = QScrollArea(self)
+        scroll_area.setObjectName("menuItemFormScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll_area.setWidget(form_container)
+
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.setObjectName("menuItemFormButtons")
+        buttons.setMinimumHeight(58)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        form_layout.addRow(buttons)
 
         self._configure_tab_order(buttons)
-        self.layout.addLayout(form_layout)
+        self.layout.addWidget(scroll_area, 1)
+        self.layout.addWidget(buttons, 0)
 
     def _create_text_edit(self, name: str, placeholder: str, height: int = None) -> QTextEdit:
         text_edit = QTextEdit(self)
@@ -159,12 +202,20 @@ class MenuItemForm(QDialog, QObject):
         self._set_expandable(text_edit, vertical=False)
         return text_edit
 
-    def _create_prompt_edit(self, name: str, placeholder: str) -> PromptInput:
+    def _create_label(self, text: str, tooltip: str = "") -> QLabel:
+        label = QLabel(text, self)
+        label.setToolTip(tooltip)
+        return label
+
+    def _create_prompt_edit(self, name: str, placeholder: str, tooltip: str = "") -> PromptInput:
         prompt_edit = PromptInput()
-        prompt_edit.text_edit.setMinimumHeight(50)
-        prompt_edit.btn_enhance_prompt.setFixedWidth(64)
+        prompt_edit.setFixedHeight(120)
+        prompt_edit.text_edit.setFixedHeight(120)
+        prompt_edit.btn_enhance_prompt.setFixedSize(58, 48)
         prompt_edit.setObjectName(name)
         prompt_edit.setPlaceholderText(placeholder)
+        prompt_edit.setToolTip(tooltip)
+        prompt_edit.text_edit.setToolTip(tooltip)
         prompt_edit.text_edit.setTabChangesFocus(True)
         return prompt_edit
 

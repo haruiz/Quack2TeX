@@ -1,6 +1,6 @@
 from quack2tex.pyqt import (
     Qt, Property, QThreadPool, Signal, QIcon, QListWidget, QListWidgetItem,
-    QWidget, QVBoxLayout, QLabel, QMenu
+    QWidget, QVBoxLayout, QLabel, QMenu, QSize
 )
 from quack2tex.resources import *  # noqa: F401
 
@@ -17,14 +17,23 @@ class ModelPicker(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(8)
         self.thread_pool = QThreadPool()
 
         self.list_widget = QListWidget()
+        self.list_widget.setFixedHeight(170)
+        self.list_widget.setIconSize(QSize(26, 26))
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
 
         self.selected_models_label = QLabel()
+        self.selected_models_label.setObjectName("selectedModelsLabel")
+        self.selected_models_label.setFixedHeight(38)
+        self.selected_models_label.setWordWrap(True)
+        self.selected_models_label.setText("Selected: none")
         self.layout.addWidget(self.list_widget)
+        self.layout.addWidget(self.selected_models_label)
+        self.setFixedHeight(216)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.open_context_menu)
 
@@ -41,6 +50,7 @@ class ModelPicker(QWidget):
         }
         for model in models:
             model_item = QListWidgetItem(model.display_name)
+            model_item.setSizeHint(QSize(0, 42))
             model_item.setData(Qt.ItemDataRole.UserRole, model.name)
             if model.client in icons:
                 model_item.setIcon(icons[model.client])
@@ -63,6 +73,7 @@ class ModelPicker(QWidget):
         for item in self.list_widget.findItems("", Qt.MatchFlag.MatchContains):
             if item.data(Qt.ItemDataRole.UserRole) in models_list:
                 item.setSelected(True)
+        self.on_selection_changed()
 
     models = Property(str, get_selected_models, set_selected_models)
 
@@ -80,9 +91,9 @@ class ModelPicker(QWidget):
         """
         Handler for when the selection changes.
         """
-        selected_models = [
-            item.data(Qt.ItemDataRole.UserRole) for item in self.list_widget.selectedItems()
-        ]
-        self.selected_models_label.setText(', '.join(selected_models))
-        self.selected_models_label.adjustSize()
-        self.layout.addWidget(self.selected_models_label)
+        selected_items = self.list_widget.selectedItems()
+        selected_models = [item.text() for item in selected_items]
+        if selected_models:
+            self.selected_models_label.setText(f"Selected ({len(selected_models)}): {', '.join(selected_models)}")
+        else:
+            self.selected_models_label.setText("Selected: none")

@@ -10,3 +10,4 @@ from .radio_button_group import RadioButtonGroup
 from .model_picker import ModelPicker
 from .prompt_dialog import PromptDialog
 from .prompt_input import PromptInput
+from .pomodoro_timer import PomodoroTimer

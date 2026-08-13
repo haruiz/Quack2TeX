@@ -1,0 +1,3 @@
+[submodule "deps/modihub"]
+	path = deps/modihub
+	url = git@github.com:OpenSciML/modihub.git

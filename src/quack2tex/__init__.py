@@ -1,15 +1,17 @@
 import inspect
 import sys
 import typing
+from pathlib import Path
 
 from pydantic import BaseModel
 
 from quack2tex.pyqt import (
-    QApplication, Qt, QIcon, QFile, QPalette, QColor, QCursor, QFontDatabase,QIODevice
+    QApplication, Qt, QIcon, QFile, QPalette, QColor, QCursor, QFontDatabase, QIODevice, QLockFile
 )
 from modihub.llm import LLM
+from quack2tex.credentials import CredentialStore
 from .resources import * # noqa
-from .utils import GuiUtils
+from .utils import GuiUtils, LibUtils, run_async
 from .windows import MainWindow
 from quack2tex.repository.db.sync_session import init_db
 
@@ -26,9 +28,13 @@ def apply_theme(app: QApplication) -> None:
     app.setStyle("Fusion")
     QFontDatabase.addApplicationFont(":/fonts/Roboto/Roboto-Regular.ttf")
     app.setWindowIcon(QIcon(":icons/rubber-duck.png"))
-    file = QFile(":/styles/style.qss")
-    file.open(QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text)
-    style_sheet = file.readAll().data().decode("utf-8")
+    style_path = Path(__file__).parent / "resources" / "styles" / "style.qss"
+    if style_path.exists():
+        style_sheet = style_path.read_text()
+    else:
+        file = QFile(":/styles/style.qss")
+        file.open(QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text)
+        style_sheet = file.readAll().data().decode("utf-8")
     app.setStyleSheet(style_sheet)
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
@@ -56,10 +62,11 @@ def latify(model: str = None):
     """
     def decorator(func):
         def wrapper(*args, **kwargs):
-            llm = LLM.create(model or "models/gemini-1.5-flash-latest")
+            CredentialStore.hydrate_environment()
+            llm = run_async(LLM.create(model or "models/gemini-1.5-flash-latest"))
             func_code = inspect.getsource(func)
             prompt = kwargs.get("prompt", "Generate a LaTeX representation of the following function in markdown format:")
-            response = llm(prompt + "\n\n" + func_code)
+            response = run_async(llm(prompt + "\n\n" + func_code))
             result = func(*args, **kwargs)
             return Quack2TexWrappedFunctionResult(result=result, latex=response)
         return wrapper
@@ -70,10 +77,15 @@ def run_app() -> None:
     Run the application.
     :return:
     """
+    CredentialStore.hydrate_environment()
     app = QApplication(sys.argv)
-    # apply_theme(app)
+    instance_lock = QLockFile(str(LibUtils.get_lib_home() / "quack2tex.lock"))
+    if not instance_lock.tryLock(100):
+        return
+    apply_theme(app)
     init_db()
     app.setOverrideCursor(QCursor(Qt.CursorShape.PointingHandCursor))
     window = MainWindow()
     window.show()
+    window.present_on_launch()
     sys.exit(app.exec())

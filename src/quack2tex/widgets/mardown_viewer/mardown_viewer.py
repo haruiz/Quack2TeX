@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from quack2tex.pyqt import (
     QUrl, QWebChannel, QApplication, QWebEngineView, QObject, Signal, Slot, Property, QWebEnginePage, QWebEngineSettings
@@ -95,7 +96,8 @@ class MarkdownViewer(QWebEngineView):
         )
         # Load the index.html file
         #QUrl.fromLocalFile(str(Path(__file__).parent / "files/index.html"))
-        local_url = QUrl("qrc:/files/index.html")
+        local_file = Path(__file__).parents[2] / "resources" / "files" / "index.html"
+        local_url = QUrl.fromLocalFile(str(local_file)) if local_file.exists() else QUrl("qrc:/files/index.html")
         self.load(local_url)
 
     @property

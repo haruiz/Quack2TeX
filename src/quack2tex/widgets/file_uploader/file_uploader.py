@@ -19,12 +19,13 @@ class FileUploader(QWidget):
 
         # Create the text field to display the file path
         self.file_path_edit = ClickableLineEdit(self)
-        self.file_path_edit.setFixedHeight(30)
+        self.file_path_edit.setFixedHeight(42)
         self.file_path_edit.doubleClicked.connect(self.open_file_dialog)
         self.file_path_edit.setPlaceholderText("No file selected")
 
         # Create the upload button
         self.upload_button = QPushButton("Browse...", self)
+        self.upload_button.setFixedHeight(42)
         self.upload_button.clicked.connect(self.open_file_dialog)
 
         # Add the text field and button to the layout
