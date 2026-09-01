@@ -126,20 +126,15 @@ Top-level Settings sections:
   - **Presets**: Quick preset definitions. The Save Preset and Reset Presets
     buttons appear in a footer only when this tab is active.
 
-### 🏁 Quick Start (via terminal)
+### 🏁 Quick Start
 
-Run the app with your API keys as command-line options:
+Launch the app and add provider keys in **Settings > Preferences > Providers**.
+Keys are stored in your operating system keychain.
 
-```bash
-quack2tex --gemini-api-key <your_gemini_api_key> \
-          --openai-api-key <your_openai_api_key> \
-          --anthropic-api-key <your_anthropic_api_key> \
-          --groq-api-key <your_groq_api_key>
-```
+### 🌱 Optional: Using Environment Variables
 
-### 🌱 Alternative: Using Environment Variables
-
-You can set the API keys as environment variables:
+For CLI or development workflows, you can still set API keys as environment
+variables before launch:
 
 ```bash
 export GEMINI_API_KEY=<your_gemini_api_key>
@@ -149,16 +144,6 @@ export GROQ_API_KEY=<your_groq_api_key>
 
 quack2tex
 ```
-
-### 📄 `.env` File Support
-
-You can also copy `.env.example` to `.env` and fill in only the keys you need:
-
-```bash
-cp .env.example .env
-```
-
-The app will automatically load these variables using `python-dotenv`.
 
 ### 🛠️ Help & Options
 
@@ -242,6 +227,23 @@ See [docs/development.md](docs/development.md) for local setup and submodule
 maintenance notes.
 
 Installer packaging notes live in [docs/packaging.md](docs/packaging.md).
+
+## 📦 Create a macOS Installer
+
+Build the unsigned macOS app bundle and DMG from a macOS checkout:
+
+```bash
+brew install create-dmg
+git submodule update --init --recursive
+uv sync
+make check
+make mac-dmg
+```
+
+The installer is written to `dist/Quack2Tex.dmg`. After installing, add API keys
+from **Settings > Preferences > Providers**.
+
+If Qt resources changed, run `make res` before `make mac-dmg`.
 
 Before opening a pull request, run:
 

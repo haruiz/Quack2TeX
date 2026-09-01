@@ -7,7 +7,7 @@ endif
 
 publish:
 	@echo "Building and publishing package..."
-	@test -n "$$PYPI_TOKEN" || (echo "PYPI_TOKEN is required. Copy .env.example to .env or export it." && exit 1)
+	@test -n "$$PYPI_TOKEN" || (echo "PYPI_TOKEN is required. Add it to .env or export it." && exit 1)
 	@uv build && \
 	uv publish --token $$PYPI_TOKEN
 

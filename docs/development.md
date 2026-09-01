@@ -32,15 +32,9 @@ Run the app from the environment:
 uv run quack2tex
 ```
 
-Copy the environment template if you want to launch the app with local provider
-keys from a file:
-
-```bash
-cp .env.example .env
-```
-
-Leave values blank until you need that provider. The real `.env` file is ignored
-and should not be committed.
+Add provider keys in **Settings > Preferences > Providers**. For CLI or
+development workflows, you can also export provider API keys in your shell
+before launch. A local `.env` file is still ignored and should not be committed.
 
 ## Audio Dependencies
 

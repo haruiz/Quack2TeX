@@ -26,20 +26,57 @@ The Makefile targets do this through `package-deps`.
 
 ## macOS
 
-Build the app bundle:
+Build macOS artifacts from macOS. The output is unsigned, so the resulting app
+or DMG is suitable for local testing and manual distribution, not notarized
+public distribution.
+
+Install the one external DMG builder dependency:
+
+```bash
+brew install create-dmg
+```
+
+From the repository root, initialize dependencies and run the source check:
+
+```bash
+git submodule update --init --recursive
+uv sync
+make check
+```
+
+If PyQt resource files changed, rebuild the generated resource module before
+packaging:
+
+```bash
+make res
+```
+
+Create the macOS `.app` bundle:
 
 ```bash
 make mac-app
 ```
 
-Build the DMG:
+This writes `dist/Quack2Tex.app`.
+
+Create the draggable installer DMG:
 
 ```bash
-brew install create-dmg
 make mac-dmg
 ```
 
-The unsigned output is written under `dist/`.
+`make mac-dmg` runs `make mac-app` first, then calls
+`packaging/macos/build-dmg.sh`. The final installer is
+`dist/Quack2Tex.dmg`.
+
+After installing the app, provider API keys should be added from
+**Settings > Preferences > Providers**. The app stores them in the operating
+system keychain. No `.env` file is needed for normal installed-app use.
+
+If `make mac-dmg` fails, check the two common causes first:
+
+- `dist/Quack2Tex.app` is missing: run `make mac-app`.
+- `create-dmg` is missing: run `brew install create-dmg`.
 
 ## Windows
 
