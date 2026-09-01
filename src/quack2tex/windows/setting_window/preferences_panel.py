@@ -3,6 +3,13 @@ import shutil
 from pathlib import Path
 
 from quack2tex.credentials import CredentialStore, CredentialStoreError
+from quack2tex.duck_image_generator import (
+    DuckImageGenerationError,
+    GeneratedDuck,
+    generate_duck_image,
+    generated_ducks_dir,
+    is_generated_duck_path,
+)
 from quack2tex.preferences import Preferences
 from quack2tex.pyqt import (
     QComboBox,
@@ -11,6 +18,7 @@ from quack2tex.pyqt import (
     QFileDialog,
     QHBoxLayout,
     QIcon,
+    QGridLayout,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -19,14 +27,17 @@ from quack2tex.pyqt import (
     QSize,
     QPushButton,
     QMessageBox,
+    QThreadPool,
     QScrollArea,
     QSpinBox,
     QTabWidget,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
     Signal,
     Qt,
 )
+from quack2tex.utils import Worker
 
 
 DUCKS_DIR = Path(__file__).resolve().parents[2] / "resources" / "ducks"
@@ -55,6 +66,7 @@ class PreferencesPanel(QFrame):
             parent: Optional parent widget.
         """
         super().__init__(parent)
+        self.threadpool = QThreadPool()
         self.setObjectName("preferencesPanel")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -67,7 +79,7 @@ class PreferencesPanel(QFrame):
         general_form = self.add_tab("General")
         voice_form = self.add_tab("Voice")
         providers_form = self.add_tab("Providers")
-        duck_form = self.add_tab("Duck")
+        duck_form = self.add_grid_tab("Duck")
         presets_form = self.add_tab("Presets")
 
         self.theme_combo = QComboBox(self)
@@ -122,6 +134,30 @@ class PreferencesPanel(QFrame):
         providers_form.addRow("", self.provider_keys_label)
         self.add_provider_key_rows(providers_form)
 
+        self.duck_generation_prompt = QTextEdit(self)
+        self.duck_generation_prompt.setPlaceholderText(
+            'Example: Colombian Team Duck Player'
+        )
+        self.duck_generation_prompt.setMinimumHeight(72)
+        self.duck_generation_prompt.setMaximumHeight(96)
+        duck_form.addWidget(self.form_label("New Duck Details:"), 0, 0, Qt.AlignmentFlag.AlignTop)
+        duck_form.addWidget(self.duck_generation_prompt, 0, 1)
+
+        duck_generation_row = QWidget(self)
+        duck_generation_layout = QHBoxLayout(duck_generation_row)
+        duck_generation_layout.setContentsMargins(0, 0, 0, 0)
+        duck_generation_layout.setSpacing(8)
+
+        self.generate_duck_button = QPushButton("Generate Duck", self)
+        self.generate_duck_button.setMinimumHeight(38)
+        self.generate_duck_button.clicked.connect(self.start_duck_generation)
+        duck_generation_layout.addWidget(self.generate_duck_button)
+
+        self.duck_generation_status = QLabel(self)
+        self.duck_generation_status.setWordWrap(True)
+        duck_generation_layout.addWidget(self.duck_generation_status, 1)
+        duck_form.addWidget(duck_generation_row, 1, 1)
+
         self.duck_picker = QListWidget(self)
         self.duck_picker.setObjectName("duckPicker")
         self.duck_picker.setViewMode(QListWidget.ViewMode.IconMode)
@@ -135,12 +171,19 @@ class PreferencesPanel(QFrame):
         self.duck_picker.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.duck_picker.setIconSize(QSize(72, 72))
         self.duck_picker.setGridSize(QSize(142, 116))
-        self.duck_picker.setMinimumHeight(260)
-        self.duck_picker.setMaximumHeight(260)
-        self.duck_picker.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.duck_picker.setMinimumHeight(420)
+        self.duck_picker.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.duck_picker.currentItemChanged.connect(self.save_duck_image)
+        self.duck_picker.currentItemChanged.connect(self.update_delete_duck_button)
         self.populate_duck_picker()
-        duck_form.addRow("Duck Image:", self.duck_picker)
+        duck_form.addWidget(self.form_label("Duck Image:"), 2, 0, Qt.AlignmentFlag.AlignTop)
+        duck_form.addWidget(self.duck_picker, 2, 1)
+
+        self.delete_duck_button = QPushButton("Delete Generated Duck", self)
+        self.delete_duck_button.setMinimumHeight(38)
+        self.delete_duck_button.clicked.connect(self.delete_generated_duck)
+        duck_form.addWidget(self.delete_duck_button, 3, 1)
+        self.update_delete_duck_button()
 
         self.presets_label = QLabel(self)
         self.presets_label.setWordWrap(True)
@@ -180,11 +223,12 @@ class PreferencesPanel(QFrame):
         self.tabs.currentChanged.connect(self.update_preset_actions_visibility)
         self.update_preset_actions_visibility()
 
-    def add_tab(self, title: str) -> QFormLayout:
+    def add_tab(self, title: str, fill_content: bool = False) -> QFormLayout:
         """Create a scrollable Preferences sub-tab.
 
         Args:
             title: Tab label.
+            fill_content: Whether the form should consume remaining tab height.
 
         Returns:
             Form layout where settings rows should be added.
@@ -206,11 +250,44 @@ class PreferencesPanel(QFrame):
         form = QFormLayout()
         form.setHorizontalSpacing(18)
         form.setVerticalSpacing(14)
-        content_layout.addLayout(form)
-        content_layout.addStretch()
+        content_layout.addLayout(form, 1 if fill_content else 0)
+        if not fill_content:
+            content_layout.addStretch()
 
         self.tabs.addTab(scroll_area, title)
         return form
+
+    def add_grid_tab(self, title: str) -> QGridLayout:
+        """Create a scrollable Preferences sub-tab whose rows can stretch."""
+        scroll_area = QScrollArea(self)
+        scroll_area.setObjectName("preferencesScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        content = QWidget(scroll_area)
+        content.setObjectName("preferencesContent")
+        scroll_area.setWidget(content)
+
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(18, 18, 18, 18)
+        content_layout.setSpacing(14)
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(14)
+        grid.setColumnStretch(1, 1)
+        grid.setRowStretch(2, 1)
+        content_layout.addLayout(grid, 1)
+
+        self.tabs.addTab(scroll_area, title)
+        return grid
+
+    def form_label(self, text: str) -> QLabel:
+        """Create a label matching QFormLayout row labels."""
+        label = QLabel(text, self)
+        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        return label
 
     def add_provider_key_rows(self, form: QFormLayout) -> None:
         """Add API-key controls for each credential provider.
@@ -313,14 +390,19 @@ class PreferencesPanel(QFrame):
         self.on_preferences_changed.emit()
 
     def duck_options(self) -> list[Path]:
-        """Return available bundled duck image paths."""
-        if not DUCKS_DIR.exists():
-            return []
-        return sorted(
-            path
-            for path in DUCKS_DIR.glob("*-duck.png")
-            if not path.name.endswith("-source.png")
-        )
+        """Return available bundled and user-generated duck image paths."""
+        duck_paths: list[Path] = []
+        if DUCKS_DIR.exists():
+            duck_paths.extend(
+                sorted(
+                    path
+                    for path in DUCKS_DIR.glob("*-duck.png")
+                    if not path.name.endswith("-source.png")
+                )
+            )
+        custom_dir = generated_ducks_dir()
+        duck_paths.extend(sorted(custom_dir.glob("*-duck.png")))
+        return duck_paths
 
     def duck_label(self, path: Path) -> str:
         """Return a display label for a duck image path.
@@ -336,6 +418,8 @@ class PreferencesPanel(QFrame):
     def populate_duck_picker(self) -> None:
         """Populate the duck image picker and select the current preference."""
         current = Preferences.duck_image()
+        self.duck_picker.blockSignals(True)
+        self.duck_picker.clear()
         for path in self.duck_options():
             item = QListWidgetItem(QIcon(str(path)), self.duck_label(path))
             item.setToolTip(f"Use {self.duck_label(path)} as the main menu duck")
@@ -347,6 +431,137 @@ class PreferencesPanel(QFrame):
 
         if not current and self.duck_picker.count():
             self.duck_picker.setCurrentRow(0)
+        self.duck_picker.blockSignals(False)
+        self.update_delete_duck_button()
+
+    def start_duck_generation(self) -> None:
+        """Start generating a new duck image from the Duck preferences tab."""
+        details = self.duck_generation_prompt.toPlainText().strip()
+        if not details:
+            QMessageBox.warning(
+                self,
+                "Missing Duck Details",
+                "Describe the duck you want to generate.",
+            )
+            return
+
+        self.generate_duck_button.setEnabled(False)
+        self.duck_generation_status.setText("Generating duck image...")
+        worker = Worker(self.do_generate_duck, details)
+        worker.signals.result.connect(self.done_generate_duck)
+        worker.signals.error.connect(self.error_generate_duck)
+        worker.signals.finished.connect(
+            lambda: self.generate_duck_button.setEnabled(True)
+        )
+        self.threadpool.start(worker)
+
+    def do_generate_duck(self, details: str) -> GeneratedDuck:
+        """Generate a duck image in a background worker."""
+        return generate_duck_image(details, self.bundled_duck_references())
+
+    def bundled_duck_references(self) -> list[Path]:
+        """Return bundled duck images used as Gemini style references."""
+        if not DUCKS_DIR.exists():
+            return []
+        return sorted(
+            path
+            for path in DUCKS_DIR.glob("*-duck.png")
+            if not path.name.endswith("-source.png")
+        )
+
+    def done_generate_duck(self, generated_duck: GeneratedDuck) -> None:
+        """Add a generated duck to the picker and select it."""
+        Preferences.set_duck_image(str(generated_duck.path))
+        self.populate_duck_picker()
+        self.select_duck_image(generated_duck.path)
+        self.duck_generation_status.setText(f"Generated {generated_duck.label}.")
+        self.duck_generation_prompt.clear()
+        self.on_preferences_changed.emit()
+
+    def error_generate_duck(self, error: tuple[type[BaseException], BaseException, str]) -> None:
+        """Show a duck-generation error."""
+        _, value, _ = error
+        if isinstance(value, DuckImageGenerationError):
+            message = str(value)
+        else:
+            message = "Duck image generation failed. Check the Gemini API key and try again."
+        self.duck_generation_status.setText(message)
+        QMessageBox.warning(self, "Unable to Generate Duck", message)
+
+    def select_duck_image(self, image_path: Path) -> None:
+        """Select a duck image in the picker by path."""
+        target = str(image_path)
+        for index in range(self.duck_picker.count()):
+            item = self.duck_picker.item(index)
+            if item.data(Qt.ItemDataRole.UserRole) == target:
+                self.duck_picker.setCurrentItem(item)
+                return
+
+    def update_delete_duck_button(self) -> None:
+        """Enable generated-duck deletion only for user-generated files."""
+        if not hasattr(self, "delete_duck_button"):
+            return
+        image_path = self.selected_duck_path()
+        self.delete_duck_button.setEnabled(
+            bool(image_path and is_generated_duck_path(image_path))
+        )
+
+    def selected_duck_path(self) -> Path | None:
+        """Return the currently selected duck image path."""
+        item = self.duck_picker.currentItem()
+        if item is None:
+            return None
+        image_path = item.data(Qt.ItemDataRole.UserRole)
+        if not image_path:
+            return None
+        return Path(str(image_path))
+
+    def delete_generated_duck(self) -> None:
+        """Delete the selected generated duck image from local storage."""
+        image_path = self.selected_duck_path()
+        if image_path is None or not is_generated_duck_path(image_path):
+            QMessageBox.information(
+                self,
+                "Bundled Duck",
+                "Only generated duck images can be deleted.",
+            )
+            return
+
+        label = self.duck_label(image_path)
+        answer = QMessageBox.question(
+            self,
+            "Delete Generated Duck",
+            f"Delete {label} from generated ducks?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            image_path.unlink(missing_ok=True)
+        except OSError as exc:
+            QMessageBox.warning(self, "Unable to Delete Duck", str(exc))
+            return
+
+        fallback = self.default_duck_option()
+        if fallback is not None:
+            Preferences.set_duck_image(str(fallback))
+        else:
+            Preferences.set_duck_image("")
+        self.populate_duck_picker()
+        if fallback is not None:
+            self.select_duck_image(fallback)
+        self.duck_generation_status.setText(f"Deleted {label}.")
+        self.on_preferences_changed.emit()
+
+    def default_duck_option(self) -> Path | None:
+        """Return the bundled duck used after deleting a generated duck."""
+        references = self.bundled_duck_references()
+        if references:
+            return references[0]
+        options = self.duck_options()
+        return options[0] if options else None
 
     def save_theme(self, theme: str) -> None:
         """Persist the selected theme.

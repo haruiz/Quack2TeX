@@ -10,7 +10,7 @@ from quack2tex import GuiUtils
 from quack2tex.preferences import Preferences
 from quack2tex.pyqt import (
     QModelIndex, QThreadPool, QSize, Signal, QIcon, QStandardItem, QPushButton, QToolBar,
-    QTreeView, QMenu, Qt,
+    QTreeView, QMenu, Qt, QAbstractItemView,
     QVBoxLayout, QFrame, QDialog
 )
 from quack2tex.repository import MenuItemRepository
@@ -18,6 +18,89 @@ from quack2tex.repository.db.sync_session import get_db_session
 from quack2tex.repository.models import MenuItem
 from quack2tex.utils import TreeViewStandardItemModel, work_exception, Worker, LibUtils  # Replace CustomModel with this
 from quack2tex.windows.setting_window.menu_item_form import MenuItemForm
+
+
+class MenuManagerTreeView(QTreeView):
+    move_item_requested = Signal(int, int)
+
+    def startDrag(self, supported_actions) -> None:
+        source_item = self._current_item()
+        if not source_item:
+            return
+        source_data: MenuItem = source_item.tag
+        if source_data.is_root:
+            return
+        super().startDrag(supported_actions)
+
+    def dragMoveEvent(self, event) -> None:
+        target_index = self._event_index(event)
+        if not target_index.isValid():
+            event.ignore()
+            return
+        super().dragMoveEvent(event)
+
+    def dropEvent(self, event) -> None:
+        source_index = self.currentIndex()
+        target_index = self._event_index(event)
+        if not source_index.isValid() or not target_index.isValid():
+            event.ignore()
+            return
+
+        model = self.model()
+        source_item = model.itemFromIndex(source_index)
+        target_item = model.itemFromIndex(target_index)
+        if not source_item or not target_item:
+            event.ignore()
+            return
+
+        source_data: MenuItem = source_item.tag
+        target_data: MenuItem = target_item.tag
+        if not self._can_move(source_index, target_index, source_data, target_data):
+            event.ignore()
+            return
+
+        event.acceptProposedAction()
+        self.move_item_requested.emit(source_data.id, target_data.id)
+
+    def _current_item(self) -> Optional[QStandardItem]:
+        model = self.model()
+        if not model:
+            return None
+        index = self.currentIndex()
+        if not index.isValid():
+            return None
+        return model.itemFromIndex(index)
+
+    def _event_index(self, event) -> QModelIndex:
+        if hasattr(event, "position"):
+            position = event.position().toPoint()
+        else:
+            position = event.pos()
+        return self.indexAt(position)
+
+    def _can_move(
+        self,
+        source_index: QModelIndex,
+        target_index: QModelIndex,
+        source_data: MenuItem,
+        target_data: MenuItem,
+    ) -> bool:
+        if source_data.is_root:
+            return False
+        if source_data.id == target_data.id:
+            return False
+        if source_data.parent_id == target_data.id:
+            return False
+        return not self._is_descendant(target_index, source_index)
+
+    @staticmethod
+    def _is_descendant(index: QModelIndex, potential_parent: QModelIndex) -> bool:
+        parent_index = index.parent()
+        while parent_index.isValid():
+            if parent_index == potential_parent:
+                return True
+            parent_index = parent_index.parent()
+        return False
 
 
 class MenuManager(QFrame):
@@ -36,7 +119,7 @@ class MenuManager(QFrame):
         self.toolbar.setObjectName("settingsToolbar")
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(QSize(22, 22))
-        self.treeview = QTreeView()
+        self.treeview = MenuManagerTreeView()
         self.treeview.setObjectName("settingsTreeView")
         self.treeview.setAlternatingRowColors(True)
         self.treeview.setIconSize(QSize(28, 28))
@@ -46,6 +129,12 @@ class MenuManager(QFrame):
         self.treeview.header().setStretchLastSection(True)
         self.treeview.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.treeview.customContextMenuRequested.connect(self.open_context_menu)
+        self.treeview.setDragEnabled(True)
+        self.treeview.setAcceptDrops(True)
+        self.treeview.setDropIndicatorShown(True)
+        self.treeview.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.treeview.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.treeview.move_item_requested.connect(self.move_item_to_parent)
 
         self.layout.addWidget(self.toolbar)
         self.layout.addWidget(self.treeview)
@@ -283,6 +372,34 @@ class MenuManager(QFrame):
         model: TreeViewStandardItemModel = self.treeview.model()
         model.remove_checked_items()
         model.layoutChanged.emit()
+        self.populate_treeview()
+
+    def move_item_to_parent(self, item_id: int, parent_id: int) -> None:
+        """
+        Move an item under another menu item.
+        """
+        work = Worker(self.do_move_item_to_parent, item_id, parent_id)
+        work.signals.result.connect(self.on_move_item_done)
+        self.thread_pool.start(work)
+
+    @work_exception
+    def do_move_item_to_parent(self, item_id: int, parent_id: int):
+        """
+        Persist a drag/drop parent change.
+        """
+        with get_db_session() as session:
+            return MenuItemRepository.move_item(session, item_id, parent_id)
+
+    def on_move_item_done(self, result) -> None:
+        """
+        Handle the completion of a drag/drop move.
+        """
+        _moved_item, error = result
+        if error:
+            GuiUtils.show_error(str(error))
+            self.populate_treeview()
+            return
+        self.on_menu_options_changed.emit()
         self.populate_treeview()
 
     def add_new_item(self) -> None:

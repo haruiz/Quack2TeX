@@ -125,6 +125,35 @@ class MenuItemRepository:
         session.commit()
 
     @classmethod
+    def move_item(cls, session: Session, item_id: int, new_parent_id: int) -> MenuItem:
+        """
+        Moves a menu item under a new parent item.
+        """
+        item = session.query(MenuItem).get(item_id)
+        new_parent = session.query(MenuItem).get(new_parent_id)
+        if item is None:
+            raise ValueError("Menu item not found.")
+        if new_parent is None:
+            raise ValueError("Target menu item not found.")
+        if item.is_root:
+            raise ValueError("The root menu item cannot be moved.")
+        if item.id == new_parent.id:
+            raise ValueError("A menu item cannot be moved under itself.")
+
+        ancestor = new_parent
+        while ancestor.parent_id is not None:
+            if ancestor.parent_id == item.id:
+                raise ValueError("A menu item cannot be moved under one of its children.")
+            ancestor = session.query(MenuItem).get(ancestor.parent_id)
+            if ancestor is None:
+                break
+
+        item.parent_id = new_parent.id
+        session.commit()
+        session.refresh(item)
+        return item
+
+    @classmethod
     def update_item(cls, session: Session, item: MenuItem) -> MenuItem:
         """
         Updates a menu item in the database.
